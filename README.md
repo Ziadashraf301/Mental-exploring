@@ -23,13 +23,11 @@ https://github.com/Ziadashraf301/Mental-exploring/assets/111798631/6da213b3-e2ee
 Our model development process includes several key steps:
 
 - [Data collection](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Data%20collection%20and%20preprocessing.ipynb)
-- [Data preprocessing]([https://github.com/Ziadashraf301/Mental-exploring](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Data%20collection%20and%20preprocessing.ipynb))
-- Feature engineering
-- Machine learning modeling
-- Model evaluation
-- Statistical testing of models
-- Model integration.
-
-
+- [Data preprocessing](https://github.com/Ziadashraf301/Mental-exploring/blob/main/data_collection_and_preprocessing.py)
+- [Feature engineering](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Models.ipynb)
+- [Machine learning modeling](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Models.ipynb)
+- [Model evaluation](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Models.ipynb)
+- [Statistical testing of models](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Test_models_statistically.ipynb)
+- [Model integration](https://github.com/Ziadashraf301/Mental-exploring/blob/main/model_data_pipline.py)
 
 
