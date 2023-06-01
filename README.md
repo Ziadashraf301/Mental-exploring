@@ -16,4 +16,8 @@ Our team has developed three machine learning and deep learning models to tackle
 
 - Finally, our third model focuses on emotion detection using images, which is a fascinating area of research. This model has numerous applications, including detecting and preventing cyberbullying, improving mental health care and support, and helping individuals better understand and manage their emotions.
 
+### Depression detection
+
+#### Data collection
+In order to train and develop our models, we utilized a variety of data sources, including the Twitter API, previous research and projects focused on depression and anxiety detection, and the website Reddit. The data collection process was iterative and cyclical, with multiple rounds of data collection and refinement to improve the quality of the data used to train our machine learning models. This approach allowed us to gather multiple versions of the data, refining our models over time and improving the accuracy of our results.
 
