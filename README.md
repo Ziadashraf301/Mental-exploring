@@ -46,3 +46,17 @@ Our model development process includes several key steps:
 - [Model evaluation](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Sentiment%20analysis/twitter-sentiment-analysis.ipynb)
 - [Statistical testing of models](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Sentiment%20analysis/test_models_statistically.ipynb)
 - [Model integration](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Sentiment%20analysis/Sentiment.py)
+
+
+### Emotion detection
+
+
+https://github.com/Ziadashraf301/Mental-exploring/assets/111798631/2ebc6909-3733-480a-8bac-d1d949d29366
+
+Our model development process includes several key steps:
+
+- [Data collection and preprocessing](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Emotion%20detection/computer%20vision.ipynb)
+- [Machine learning modeling and evaluation](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Emotion%20detection/computer%20vision.ipynb)
+- [Statistical testing of models](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Emotion%20detection/test_models_statistically.ipynb)
+- [Model test](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Emotion%20detection/Model_test.ipynb)
+- [Model integration](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Emotion%20detection/Emotion_detection_pipeline.py)
