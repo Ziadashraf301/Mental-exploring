@@ -1,6 +1,6 @@
 # Mental-exploring
 ## Introduction
-This repo contains my graduation project on mental health. Using Python, we explored mental health issues through data preprocessing, exploratory data analysis, and machine learning techniques. The project includes Jupyter notebooks, data files, and visualizations. 
+This repo contains my graduation project on mental health. Using Python, we explored mental health issues through data preprocessing, exploratory data analysis, and machine learning techniques. The project includes Jupyter notebooks, data pipeline files, and visualizations. 
 
 ![image](https://github.com/Ziadashraf301/Mental-exploring/assets/111798631/bd3fd80e-b057-49f8-a61b-e4cc9dfe1cff)
 
