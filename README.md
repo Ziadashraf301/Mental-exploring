@@ -21,8 +21,9 @@ Our team has developed three machine learning and deep learning models to tackle
 
 https://github.com/Ziadashraf301/Mental-exploring/assets/111798631/7de96f15-a505-4841-878d-3214c45b5ed4
 
-Our model development process includes several key steps:
+Our model development includes several key steps:
 
+#### Traditional ML Pipeline (Baseline & Ensemble Models)
 - [Data collection](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Depression%20detection/Data%20collection%20and%20preprocessing.ipynb)
 - [Data preprocessing](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Depression%20detection/data_collection_and_preprocessing.py)
 - [Feature engineering](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Depression%20detection/Models.ipynb)
@@ -30,6 +31,9 @@ Our model development process includes several key steps:
 - [Model evaluation](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Depression%20detection/Models.ipynb)
 - [Statistical testing of models](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Depression%20detection/Test_models_statistically.ipynb)
 - [Model integration](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Depression%20detection/model_data_pipline.py)
+
+#### Deep Learning with RoBERTa
+- [Fine-tuned RoBERTa with LoRA](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Depression%20detection/depression_detection_with_bert.ipynb)
 
 
 ### Sentiment analysis
