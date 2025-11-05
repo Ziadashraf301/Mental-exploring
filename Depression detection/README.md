@@ -239,7 +239,7 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
 
 # Load model and tokenizer
-model_path = 'https://drive.google.com/drive/folders/1dBVlepUsHfEDnMzmt9HlSlVF2-irGTxS?usp=sharing'
+model_path = 'ziadashraf98765/roberta-depression-detection-lora-merged'
 tokenizer = AutoTokenizer.from_pretrained(model_path)
 model = AutoModelForSequenceClassification.from_pretrained(model_path)
 
