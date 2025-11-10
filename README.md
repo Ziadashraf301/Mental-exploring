@@ -24,7 +24,7 @@ https://github.com/Ziadashraf301/Mental-exploring/assets/111798631/7de96f15-a505
 Our model development includes several key steps:
 
 #### Traditional ML Pipeline (Baseline & Ensemble Models)
-- [Data collection](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Depression%20detection/Data%20collection%20and%20preprocessing.ipynb)
+- [Data collection](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Depression%20detection/notebooks/Data%20collection%20and%20preprocessing.ipynb)
 - [Data preprocessing](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Depression%20detection/data_collection_and_preprocessing.py)
 - [Feature engineering](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Depression%20detection/Models.ipynb)
 - [Machine learning modeling](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Depression%20detection/Models.ipynb)
