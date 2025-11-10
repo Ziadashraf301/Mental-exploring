@@ -204,16 +204,16 @@ RoBERTa Model:  ~10.07% false negatives
 Our model development includes several key steps:
 
 ### Traditional ML Pipeline (Baseline & Ensemble Models)
-- [Data collection](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Depression%20detection/Data%20collection%20and%20preprocessing.ipynb)
-- [Data preprocessing](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Depression%20detection/data_collection_and_preprocessing.py)
-- [Feature engineering](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Depression%20detection/Models.ipynb)
-- [Machine learning modeling](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Depression%20detection/Models.ipynb)
-- [Model evaluation](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Depression%20detection/Models.ipynb)
-- [Statistical testing of models](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Depression%20detection/Test_models_statistically.ipynb)
-- [Model integration](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Depression%20detection/model_data_pipline.py)
+- [Data collection](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Data_assets/Data%20References.md)
+- [Data preprocessing](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Depression_detection/notebooks/Preprocessing.ipynb)
+- [Feature engineering](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Depression_detection/notebooks//Models.ipynb)
+- [Machine learning modeling](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Depression_detection/notebooks//Models.ipynb)
+- [Model evaluation](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Depression_detection/notebooks//Models.ipynb)
+- [Statistical testing of models](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Depression_detection/notebooks/Test_Models_Statistically.ipynb)
+- [Model integration](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Depression_detection/pipeline/model_prediction_pipline.py)
 
 ### Deep Learning with RoBERTa
-- [Fine-tuned RoBERTa with LoRA](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Depression%20detection/depression_detection_with_bert.ipynb)
+- [Fine-tuned RoBERTa with LoRA](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Depression_detection/notebooks/Depression_Detection_With_Bert.ipynb)
 
 ---
 
