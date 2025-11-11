@@ -1,8 +1,13 @@
 import re
+import nltk
+nltk.download('punkt_tab')
+nltk.download('wordnet')
+
 from nltk.stem import WordNetLemmatizer
+from tqdm import tqdm 
+import time
 import warnings
 warnings.filterwarnings('ignore')
-
 
 # Defining dictionary containing all emojis with their meanings.
 emojis = {':)': 'smile', ':-)': 'smile', ';d': 'wink', ':-E': 'vampire', ':(': 'sad', 
@@ -31,7 +36,7 @@ stopwordlist = ['a', 'about', 'above', 'after', 'again', 'ain', 'all', 'am', 'an
              'why', 'will', 'with', 'won', 'y', 'you', "youd","youll", "youre",
              "youve", 'your', 'yours', 'yourself', 'yourselves']
 
-def preprocess(textdata):
+def preprocess_text(text):
     processedText = []
     
     # Create Lemmatizer and Stemmer.
@@ -43,31 +48,40 @@ def preprocess(textdata):
     alphaPattern      = "[^a-zA-Z0-9]"
     sequencePattern   = r"(.)\1\1+"
     seqReplacePattern = r"\1\1"
+
+    t = time.time()
     
-    for tweet in textdata:
+    for tweet in tqdm(text):
         tweet = tweet.lower()
         
         # Replace all URls with 'URL'
         tweet = re.sub(urlPattern,'',tweet)
+
         # Replace all emojis.
         for emoji in emojis.keys():
             tweet = tweet.replace(emoji,emojis[emoji])        
+
         # Replace @USERNAME to 'USER'.
-        tweet = re.sub(userPattern,'', tweet)        
+        tweet = re.sub(userPattern,'', tweet)
+
         # Replace all non alphabets.
         tweet = re.sub(alphaPattern, " ", tweet)
+
         # Replace 3 or more consecutive letters by 2 letter.
         tweet = re.sub(sequencePattern, seqReplacePattern, tweet)
 
         tweetwords = ''
         for word in tweet.split():
             # Checking if the word is a stopword.
-            #if word not in stopwordlist:
-            if len(word)>1:
-                # Lemmatizing the word.
-                word = wordLemm.lemmatize(word)
-                tweetwords += (word+' ')
+            # if word not in stopwordlist:
+                if len(word)>1:
+                    # Lemmatizing the word.
+                    word = wordLemm.lemmatize(word)
+                    tweetwords += (word+' ')
             
         processedText.append(tweetwords)
+
+    print(f'Text Preprocessing complete.')
+    print(f'Time Taken: {round(time.time()-t)} seconds')
         
     return processedText
