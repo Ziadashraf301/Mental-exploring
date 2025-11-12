@@ -1,11 +1,9 @@
 import re
 import nltk
-nltk.download('punkt_tab')
-nltk.download('wordnet')
+# nltk.download('punkt_tab')
+# nltk.download('wordnet')
 
 from nltk.stem import WordNetLemmatizer
-from tqdm import tqdm 
-import time
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -37,7 +35,6 @@ stopwordlist = ['a', 'about', 'above', 'after', 'again', 'ain', 'all', 'am', 'an
              "youve", 'your', 'yours', 'yourself', 'yourselves']
 
 def preprocess_text(text):
-    processedText = []
     
     # Create Lemmatizer and Stemmer.
     wordLemm = WordNetLemmatizer()
@@ -49,39 +46,31 @@ def preprocess_text(text):
     sequencePattern   = r"(.)\1\1+"
     seqReplacePattern = r"\1\1"
 
-    t = time.time()
-    
-    for tweet in tqdm(text):
-        tweet = tweet.lower()
+    tweet = text.lower()
         
-        # Replace all URls with 'URL'
-        tweet = re.sub(urlPattern,'',tweet)
+    # Replace all URls with 'URL'
+    tweet = re.sub(urlPattern,'',tweet)
 
-        # Replace all emojis.
-        for emoji in emojis.keys():
-            tweet = tweet.replace(emoji,emojis[emoji])        
+    # Replace all emojis.
+    for emoji in emojis.keys():
+        tweet = tweet.replace(emoji,emojis[emoji])        
 
-        # Replace @USERNAME to 'USER'.
-        tweet = re.sub(userPattern,'', tweet)
+    # Replace @USERNAME to 'USER'.
+    tweet = re.sub(userPattern,'', tweet)
 
-        # Replace all non alphabets.
-        tweet = re.sub(alphaPattern, " ", tweet)
+    # Replace all non alphabets.
+    tweet = re.sub(alphaPattern, " ", tweet)
 
-        # Replace 3 or more consecutive letters by 2 letter.
-        tweet = re.sub(sequencePattern, seqReplacePattern, tweet)
+    # Replace 3 or more consecutive letters by 2 letter.
+    tweet = re.sub(sequencePattern, seqReplacePattern, tweet)
 
-        tweetwords = ''
-        for word in tweet.split():
-            # Checking if the word is a stopword.
-            # if word not in stopwordlist:
-                if len(word)>1:
-                    # Lemmatizing the word.
-                    word = wordLemm.lemmatize(word)
-                    tweetwords += (word+' ')
-            
-        processedText.append(tweetwords)
-
-    print(f'Text Preprocessing complete.')
-    print(f'Time Taken: {round(time.time()-t)} seconds')
+    tweetword = ''
+    for word in tweet.split():
+        # Checking if the word is a stopword.
+        # if word not in stopwordlist:
+            if len(word)>1:
+                # Lemmatizing the word.
+                word = wordLemm.lemmatize(word)
+                tweetword += (word+' ')
         
-    return processedText
+    return tweetword
