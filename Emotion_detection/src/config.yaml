@@ -1,0 +1,209 @@
+# ============================================================
+# EMOTION DETECTION PIPELINE CONFIGURATION
+# ============================================================
+# Change any parameter here and run the pipeline
+# All models will use these settings automatically
+
+# ============================================================
+# DATA PATHS
+# ============================================================
+data:
+  train_images_path: "../data/train/"
+  train_labels_path: "../data/labels/train_dataset_labels.csv"
+  test_images_path: "../data/test/"
+  test_labels_path: "../data/labels/test_dataset_labels.csv"
+
+# ============================================================
+# MLFLOW SETTINGS
+# ============================================================
+mlflow:
+  experiment_name: "EmotionDetection"
+  tracking_uri: "http://localhost:5009"  # Can be local path or remote server URL
+  # tracking_uri: "http://localhost:5000"  # For remote tracking
+
+# ============================================================
+# OUTPUT DIRECTORIES
+# ============================================================
+output:
+  models_dir: "../models"
+  plots_dir: "../plots"
+  logs_dir: "../logs"
+
+# ============================================================
+# IMAGE PREPROCESSING
+# ============================================================
+preprocessing:
+  image_size: [48, 48]  # [height, width]
+  normalize: true        # Scale pixel values to [0, 1]
+  color_mode: "rgb"      # "rgb" or "grayscale"
+
+# ============================================================
+# LOGISTIC REGRESSION PARAMETERS
+# ============================================================
+logistic_regression:
+  enabled: false           # Set to false to skip this model
+  max_iter: 100
+  penalty: "l2"           # "l1", "l2", "elasticnet", or "none"
+  solver: "lbfgs"         # "lbfgs", "saga", "liblinear"
+  C: 1.0                  # Inverse of regularization strength
+  random_state: 42
+  n_jobs: -1              # Use all CPU cores
+
+# ============================================================
+# FEEDFORWARD NEURAL NETWORK (MLP) PARAMETERS
+# ============================================================
+feedforward_nn:
+  enabled: false           # Set to false to skip this model
+  hidden_layer_sizes: [64, 32, 16]  # List of hidden layer sizes
+  activation: "relu"      # "relu", "tanh", "logistic"
+  solver: "adam"          # "adam", "sgd", "lbfgs"
+  alpha: 0.0001          # L2 regularization parameter
+  batch_size: 32
+  learning_rate: "adaptive"  # "constant", "invscaling", "adaptive"
+  learning_rate_init: 0.001
+  max_iter: 30
+  early_stopping: true
+  validation_fraction: 0.2
+  random_state: 42
+
+# ============================================================
+# CNN MODEL ARCHITECTURE
+# ============================================================
+cnn_architecture:
+  enabled: true           # Set to false to skip this model
+  input_shape: [48, 48, 3]  # [height, width, channels]
+  
+  # Convolutional Layers
+  conv_layers:
+    - filters: 16
+      kernel_size: [3, 3]
+      activation: "relu"
+      pool_size: [2, 2]
+    
+    - filters: 32
+      kernel_size: [3, 3]
+      activation: "relu"
+      pool_size: [2, 2]
+    
+    - filters: 64
+      kernel_size: [3, 3]
+      activation: "relu"
+      pool_size: [2, 2]
+
+    - filters: 32
+      kernel_size: [3, 3]
+      activation: "relu"
+      pool_size: [2, 2]
+  
+  # Dense Layers
+  dense_layers:
+    - units: 64
+      activation: "relu"
+      dropout: 0.0
+      l2_reg: 0.002
+  
+  # Output Layer
+  output_layer:
+    units: 1
+    activation: "sigmoid"  # "sigmoid" for binary, "softmax" for multi-class
+
+# ============================================================
+# CNN TRAINING PARAMETERS
+# ============================================================
+cnn_training:
+  optimizer: "adam"       # "adam", "sgd", "rmsprop"
+  learning_rate: 0.001    # Learning rate for optimizer
+  loss: "binary_crossentropy"  # "binary_crossentropy", "categorical_crossentropy"
+  epochs: 1
+  batch_size: 32
+  validation_split: 0.2   # Fraction of training data to use for validation
+  
+  # Early Stopping
+  early_stopping:
+    enabled: true
+    monitor: "val_loss"
+    patience: 10
+    restore_best_weights: true
+  
+  # Model Checkpoint
+  checkpoint:
+    enabled: true
+    save_best_only: true
+    monitor: "val_accuracy"
+
+# ============================================================
+# DATA AUGMENTATION (for CNN)
+# ============================================================
+data_augmentation:
+  enabled: true
+  rotation_range: 10       # Degrees
+  width_shift_range: 0.1   # Fraction of total width
+  height_shift_range: 0.1  # Fraction of total height
+  shear_range: 0.1
+  zoom_range: 0.1
+  horizontal_flip: true
+  vertical_flip: false
+  fill_mode: "nearest"     # "constant", "nearest", "reflect", "wrap"
+
+# ============================================================
+# CROSS-VALIDATION SETTINGS
+# ============================================================
+cross_validation:
+  enabled: false          # Set to true to use K-Fold CV for CNN
+  k_folds: 5
+  shuffle: true
+  random_state: 42
+
+# ============================================================
+# EVALUATION SETTINGS
+# ============================================================
+evaluation:
+  # Classification Report
+  target_names: ["Sad", "Happy"]
+  
+  # Metrics to compute
+  compute_accuracy: true
+  compute_f1: true
+  compute_precision: true
+  compute_recall: true
+  compute_confusion_matrix: true
+  
+  # Plot Settings
+  save_plots: true
+  plot_dpi: 150
+  plot_format: "png"      # "png", "jpg", "pdf"
+
+# ============================================================
+# LOGGING SETTINGS
+# ============================================================
+logging:
+  level: "INFO"           # "DEBUG", "INFO", "WARNING", "ERROR"
+  console_output: true
+  file_output: true
+  log_file: "pipeline.log"
+
+# ============================================================
+# PERFORMANCE SETTINGS
+# ============================================================
+performance:
+  use_gpu: true           # Use GPU if available
+  gpu_memory_fraction: 0.8  # Fraction of GPU memory to use
+  num_workers: 4          # Number of workers for data loading
+  use_multiprocessing: true
+
+# ============================================================
+# RANDOM SEEDS (for reproducibility)
+# ============================================================
+random_seeds:
+  numpy_seed: 42
+  tensorflow_seed: 42
+  python_seed: 42
+
+# ============================================================
+# MODEL SAVING
+# ============================================================
+model_saving:
+  save_sklearn_models: true
+  save_cnn_model: true
+  save_format: "keras"    # "keras", "h5", "savedmodel"
+  save_weights_only: false
