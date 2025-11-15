@@ -8,26 +8,26 @@
 # DATA PATHS
 # ============================================================
 data:
-  train_images_path: "../data/train/"
-  train_labels_path: "../data/labels/train_dataset_labels.csv"
-  test_images_path: "../data/test/"
-  test_labels_path: "../data/labels/test_dataset_labels.csv"
+  train_images_path: "data/train/"
+  train_labels_path: "data/labels/train_dataset_labels.csv"
+  test_images_path: "data/test/"
+  test_labels_path: "data/labels/test_dataset_labels.csv"
 
 # ============================================================
 # MLFLOW SETTINGS
 # ============================================================
 mlflow:
   experiment_name: "EmotionDetection"
-  tracking_uri: "http://localhost:5009"  # Can be local path or remote server URL
+  tracking_uri: "http://localhost:5000"  # Can be local path or remote server URL
   # tracking_uri: "http://localhost:5000"  # For remote tracking
 
 # ============================================================
 # OUTPUT DIRECTORIES
 # ============================================================
 output:
-  models_dir: "../models"
-  plots_dir: "../plots"
-  logs_dir: "../logs"
+  models_dir: "models"
+  plots_dir: "plots"
+  logs_dir: "logs"
 
 # ============================================================
 # IMAGE PREPROCESSING
@@ -42,7 +42,7 @@ preprocessing:
 # ============================================================
 logistic_regression:
   enabled: false           # Set to false to skip this model
-  max_iter: 100
+  max_iter: 500
   penalty: "l2"           # "l1", "l2", "elasticnet", or "none"
   solver: "lbfgs"         # "lbfgs", "saga", "liblinear"
   C: 1.0                  # Inverse of regularization strength
@@ -61,7 +61,7 @@ feedforward_nn:
   batch_size: 32
   learning_rate: "adaptive"  # "constant", "invscaling", "adaptive"
   learning_rate_init: 0.001
-  max_iter: 30
+  max_iter: 100
   early_stopping: true
   validation_fraction: 0.2
   random_state: 42
@@ -114,7 +114,7 @@ cnn_training:
   optimizer: "adam"       # "adam", "sgd", "rmsprop"
   learning_rate: 0.001    # Learning rate for optimizer
   loss: "binary_crossentropy"  # "binary_crossentropy", "categorical_crossentropy"
-  epochs: 1
+  epochs: 30
   batch_size: 32
   validation_split: 0.2   # Fraction of training data to use for validation
   

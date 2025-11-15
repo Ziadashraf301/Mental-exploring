@@ -12,7 +12,7 @@ from typing import Dict, Any
 class Config:
     """Configuration class that loads and provides access to all pipeline settings"""
     
-    def __init__(self, config_path: str = "config.yaml"):
+    def __init__(self, config_path: str = "config/config.yaml"):
         """
         Initialize configuration from YAML file
         
@@ -278,7 +278,7 @@ class Config:
 # Singleton instance
 _config_instance = None
 
-def get_config(config_path: str = "../config.yaml") -> Config:
+def get_config(config_path: str = "config/train_config.yaml") -> Config:
     """
     Get or create configuration instance (Singleton pattern)
     
@@ -298,7 +298,7 @@ def get_config(config_path: str = "../config.yaml") -> Config:
     return _config_instance
 
 
-def reload_config(config_path: str = "../config.yaml") -> Config:
+def reload_config(config_path: str = "config/train_config.yaml") -> Config:
     """
     Force reload of configuration
     

@@ -3,7 +3,7 @@ import os
 import numpy as np
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
-from utils.pipeline_logger import pipeline_logger
+from src.logger.train_logger import pipeline_logger
 
 
 def load_image(filepath):

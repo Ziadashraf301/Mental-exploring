@@ -1,5 +1,5 @@
-from images.image_loader import load_images, load_labels
-from utils.pipeline_logger import pipeline_logger
+from src.images.image_loader import load_images, load_labels
+from src.logger.train_logger import pipeline_logger
 
 def prepare_data_for_sklearn(images, labels):
     """

@@ -1,0 +1,40 @@
+# ============================================================
+# INFERENCE PIPELINE CONFIGURATION
+# ============================================================
+
+# ============================================================
+# MLFLOW SETTINGS
+# ============================================================
+mlflow:
+  tracking_uri: "http://localhost:5000"
+  model_name: "CNN_EmotionDetection"
+  model_version: "1"           # Use specific version
+  # model_stage: "Production"  # OR use stage (uncomment to use)
+
+# ============================================================
+# FACE DETECTION SETTINGS
+# ============================================================
+face_detection:
+  confidence_threshold: 0.9    # Minimum confidence for face detection (0.0-1.0)
+
+# ============================================================
+# IMAGE PREPROCESSING
+# ============================================================
+preprocessing:
+  image_size: [48, 48]         # [height, width]
+  normalize: true              # Scale pixel values to [0, 1]
+
+# ============================================================
+# LOGGING SETTINGS
+# ============================================================
+logging:
+  level: "INFO"                # DEBUG, INFO, WARNING, ERROR
+  log_file: "logs/inference.log"
+  console_output: true
+
+# ============================================================
+# OUTPUT SETTINGS
+# ============================================================
+output:
+  save_results: false          # Save results to JSON file
+  results_dir: "results"       # Directory for saving results

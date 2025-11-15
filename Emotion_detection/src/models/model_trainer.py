@@ -1,12 +1,8 @@
-import matplotlib.pyplot as plt
-import numpy as np
-from sklearn.model_selection import KFold
 from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
 import tensorflow as tf
-from sklearn.model_selection import train_test_split
-from utils.pipeline_logger import pipeline_logger
-from utils.config_loader import get_config
+from src.logger.train_logger import pipeline_logger
+from src.config.train_config_loader import get_config
 
 # --------------------------- SKLEARN MODELS ---------------------------
 
@@ -140,93 +136,130 @@ def build_cnn():
     return model
 
 
-def train_cnn(model, X, y):
+def train_cnn(
+    model,
+    X_train,
+    y_train,
+    X_val=None,
+    y_val=None,
+    batch_size=32,
+    epochs=10,
+    augmentation_params=None
+):
     """
-    Train CNN using parameters from config.
+    Train a CNN model with optional validation and data augmentation.
+
+    Parameters:
+    -----------
+    model : tf.keras.Model
+        CNN model to train.
+
+    X_train : np.ndarray
+        Training images.
+
+    y_train : np.ndarray
+        Training labels.
+
+    X_val : np.ndarray or None
+        Validation images (only used if provided).
+
+    y_val : np.ndarray or None
+        Validation labels (only used if provided).
+
+    batch_size : int
+        Mini-batch size.
+
+    epochs : int
+        Number of training epochs.
+
+    augmentation_params : dict or None
+        Parameters passed to ImageDataGenerator.
+
+    Returns:
+    --------
+    model : tf.keras.Model
+        The trained model.
+
+    history : tf.keras.callbacks.History
+        The training history object.
     """
+    import tensorflow as tf
+    from Emotion_detection.src.logger.train_logger import pipeline_logger
+    from Emotion_detection.src.config.train_config_loader import get_config
+
     config = get_config()
-    
     training_params = config.cnn_training_params
-    augmentation_params = config.augmentation_params
-    cv_params = config.cv_params
-    
-    epochs = training_params['epochs']
-    batch_size = training_params['batch_size']
-    validation_split = training_params['validation_split']
-    
-    pipeline_logger.info(f"Starting CNN training (epochs={epochs}, batch_size={batch_size})")
-    
-    # Setup callbacks
-    callbacks = []
-    
-    # Early stopping
-    if training_params['early_stopping']['enabled']:
-        early_stopping = tf.keras.callbacks.EarlyStopping(
-            monitor=training_params['early_stopping']['monitor'],
-            patience=training_params['early_stopping']['patience'],
-            restore_best_weights=training_params['early_stopping']['restore_best_weights']
-        )
-        callbacks.append(early_stopping)
-    
-    # Model checkpoint
-    if training_params['checkpoint']['enabled']:
-        checkpoint_path = f"{config.models_dir}/cnn_checkpoint.keras"
-        checkpoint = tf.keras.callbacks.ModelCheckpoint(
-            checkpoint_path,
-            monitor=training_params['checkpoint']['monitor'],
-            save_best_only=training_params['checkpoint']['save_best_only'],
-            verbose=1
-        )
-        callbacks.append(checkpoint)
-    
-    # Data augmentation
-    if config.augmentation_enabled:
+
+    # ===============================
+    # 1. Data augmentation
+    # ===============================
+    if augmentation_params:
         datagen = tf.keras.preprocessing.image.ImageDataGenerator(**augmentation_params)
-        pipeline_logger.info("Data augmentation enabled")
+        pipeline_logger.info("Image augmentation enabled.")
     else:
         datagen = tf.keras.preprocessing.image.ImageDataGenerator()
-        pipeline_logger.info("No data augmentation")
-    
-    # K-Fold cross-validation
-    if cv_params['enabled']:
-        k_folds = cv_params['k_folds']
-        kf = KFold(
-            n_splits=k_folds,
-            shuffle=cv_params['shuffle'],
-            random_state=cv_params['random_state']
+        pipeline_logger.info("No image augmentation applied.")
+
+    # ===============================
+    # 2. Callbacks
+    # ===============================
+    callbacks = []
+
+    # Early Stopping
+    es_cfg = training_params.get("early_stopping", {})
+    if es_cfg.get("enabled", False):
+        callbacks.append(
+            tf.keras.callbacks.EarlyStopping(
+                monitor=es_cfg.get("monitor", "val_loss"),
+                patience=es_cfg.get("patience", 5),
+                restore_best_weights=es_cfg.get("restore_best_weights", True)
+            )
         )
-        fold_train_scores = []
-        fold_val_scores = []
-        
-        for fold, (train_idx, val_idx) in enumerate(kf.split(X)):
-            pipeline_logger.info(f"Training fold {fold + 1}/{k_folds}")
-            X_train, X_val = X[train_idx], X[val_idx]
-            y_train, y_val = y[train_idx], y[val_idx]
-            
-            history = model.fit(
-                datagen.flow(X_train, y_train, batch_size=batch_size),
-                epochs=epochs,
-                validation_data=(X_val, y_val),
-                callbacks=callbacks,
+
+    # Model Checkpoint
+    cp_cfg = training_params.get("checkpoint", {})
+    if cp_cfg.get("enabled", False):
+        checkpoint_path = f"{config.models_dir}/cnn_checkpoint.keras"
+        callbacks.append(
+            tf.keras.callbacks.ModelCheckpoint(
+                filepath=checkpoint_path,
+                monitor=cp_cfg.get("monitor", "val_loss"),
+                save_best_only=cp_cfg.get("save_best_only", True),
                 verbose=1
             )
-            
-            train_acc = history.history['accuracy'][-1]
-            val_acc = history.history['val_accuracy'][-1]
-            fold_train_scores.append(train_acc)
-            fold_val_scores.append(val_acc)
-            pipeline_logger.info(f"Fold {fold + 1} - Train Acc: {train_acc:.4f}, Val Acc: {val_acc:.4f}")
-        
-        pipeline_logger.info(f"K-Fold complete. Mean Val Acc: {np.mean(fold_val_scores):.4f}")
-        return model, (fold_train_scores, fold_val_scores)
-    
-    else:
-        # Simple fit on all train data 
+        )
+
+    # ===============================
+    # 3. Fit model (with or without validation)
+    # ===============================
+    if X_val is not None and y_val is not None:
+        pipeline_logger.info("Training with validation data...")
         history = model.fit(
-            datagen.flow(X, y, batch_size=batch_size),
+            datagen.flow(X_train, y_train, batch_size=batch_size),
             epochs=epochs,
+            validation_data=(X_val, y_val),
+            callbacks=callbacks,
             verbose=1
         )
-        
-        pipeline_logger.info(f"Training complete. Final Val Acc: {history.history['accuracy'][-1]:.4f}")
-        return model, history
+    else:
+        pipeline_logger.info("Training WITHOUT validation data...")
+        history = model.fit(
+            datagen.flow(X_train, y_train, batch_size=batch_size),
+            epochs=epochs,
+            callbacks=callbacks,
+            verbose=1
+        )
+
+    # ===============================
+    # 4. Logging
+    # ===============================
+    final_acc = history.history["accuracy"][-1]
+    pipeline_logger.info(f"Training complete — Final Train Accuracy: {final_acc:.4f}")
+
+    if X_val is not None:
+        if "val_accuracy" in history.history:
+            pipeline_logger.info(
+                f"Final Validation Accuracy: {history.history['val_accuracy'][-1]:.4f}"
+            )
+
+    return model, history
