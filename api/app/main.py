@@ -8,7 +8,7 @@ import time
 from datetime import datetime
 import uuid
 
-from app.schemas import (
+from api.core.schemas import (
     PredictionRequest, 
     PredictionResponse, 
     UserCreate, 
@@ -16,7 +16,7 @@ from app.schemas import (
     AnalyticsResponse,
     HealthResponse
 )
-from app.database import Database
+from api.core.database import Database
 from app.tracking import ModelMonitor
 from app.config import settings
 from app.middleware import RateLimitMiddleware
