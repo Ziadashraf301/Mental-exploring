@@ -1,8 +1,11 @@
 from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
 import tensorflow as tf
-from src.logger.train_logger import pipeline_logger
-from src.config.train_config_loader import get_config
+from src.logger.train_logger import get_logger
+from src.config.train_config_loader import get_train_config
+
+LOGGER = get_logger()
+config = get_train_config()
 
 # --------------------------- SKLEARN MODELS ---------------------------
 
@@ -10,7 +13,6 @@ def train_logistic_regression(X, y):
     """
     Train Logistic Regression using parameters from config.
     """
-    config = get_config()
     params = config.lr_params
     
     model = LogisticRegression(
@@ -23,7 +25,7 @@ def train_logistic_regression(X, y):
     )
     model.fit(X, y)
     
-    pipeline_logger.info(f"Trained Logistic Regression with params: {params}")
+    LOGGER.info(f"Trained Logistic Regression with params: {params}")
     return model
 
 
@@ -31,7 +33,6 @@ def train_ffn(X, y):
     """
     Train Feedforward Neural Network using parameters from config.
     """
-    config = get_config()
     params = config.ffn_params
     
     model = MLPClassifier(
@@ -50,7 +51,7 @@ def train_ffn(X, y):
     )
     model.fit(X, y)
     
-    pipeline_logger.info(f"Trained Feedforward NN with params: {params}")
+    LOGGER.info(f"Trained Feedforward NN with params: {params}")
     return model
 
 
@@ -60,7 +61,6 @@ def build_cnn():
     """
     Build CNN model using architecture from config.
     """
-    config = get_config()
     
     input_shape = config.cnn_input_shape
     conv_layers = config.cnn_conv_layers
@@ -132,7 +132,7 @@ def build_cnn():
         metrics=['accuracy']
     )
     
-    pipeline_logger.info(f"Built CNN model with architecture from config")
+    LOGGER.info(f"Built CNN model with architecture from config")
     return model
 
 
@@ -184,10 +184,7 @@ def train_cnn(
         The training history object.
     """
     import tensorflow as tf
-    from Emotion_detection.src.logger.train_logger import pipeline_logger
-    from Emotion_detection.src.config.train_config_loader import get_config
 
-    config = get_config()
     training_params = config.cnn_training_params
 
     # ===============================
@@ -195,10 +192,10 @@ def train_cnn(
     # ===============================
     if augmentation_params:
         datagen = tf.keras.preprocessing.image.ImageDataGenerator(**augmentation_params)
-        pipeline_logger.info("Image augmentation enabled.")
+        LOGGER.info("Image augmentation enabled.")
     else:
         datagen = tf.keras.preprocessing.image.ImageDataGenerator()
-        pipeline_logger.info("No image augmentation applied.")
+        LOGGER.info("No image augmentation applied.")
 
     # ===============================
     # 2. Callbacks
@@ -233,7 +230,7 @@ def train_cnn(
     # 3. Fit model (with or without validation)
     # ===============================
     if X_val is not None and y_val is not None:
-        pipeline_logger.info("Training with validation data...")
+        LOGGER.info("Training with validation data...")
         history = model.fit(
             datagen.flow(X_train, y_train, batch_size=batch_size),
             epochs=epochs,
@@ -242,7 +239,7 @@ def train_cnn(
             verbose=1
         )
     else:
-        pipeline_logger.info("Training WITHOUT validation data...")
+        LOGGER.info("Training WITHOUT validation data...")
         history = model.fit(
             datagen.flow(X_train, y_train, batch_size=batch_size),
             epochs=epochs,
@@ -254,11 +251,11 @@ def train_cnn(
     # 4. Logging
     # ===============================
     final_acc = history.history["accuracy"][-1]
-    pipeline_logger.info(f"Training complete — Final Train Accuracy: {final_acc:.4f}")
+    LOGGER.info(f"Training complete — Final Train Accuracy: {final_acc:.4f}")
 
     if X_val is not None:
         if "val_accuracy" in history.history:
-            pipeline_logger.info(
+            LOGGER.info(
                 f"Final Validation Accuracy: {history.history['val_accuracy'][-1]:.4f}"
             )
 

@@ -9,7 +9,7 @@ if __name__ == "__main__":
     import os 
 
     # Check if custom config path provided
-    config_path = sys.argv[1] if len(sys.argv) > 1 else "src/config/train_config.yaml"
+    config_path = sys.argv[1] if len(sys.argv) > 1 else "src/config/config_files/train_config.yaml"
 
     print(f"\n🚀 Starting pipeline with configuration: {config_path}\n")
     

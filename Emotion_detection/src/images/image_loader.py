@@ -3,8 +3,9 @@ import os
 import numpy as np
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
-from src.logger.train_logger import pipeline_logger
+from src.logger.train_logger import get_logger
 
+LOGGER = get_logger()
 
 def load_image(filepath):
     """
@@ -22,7 +23,7 @@ def load_image(filepath):
     """
     img = cv2.imread(str(filepath))
     if img is None:
-        pipeline_logger.warning(f"Failed to load image: {filepath}")
+        LOGGER.warning(f"Failed to load image: {filepath}")
     return img
 
 
@@ -47,7 +48,7 @@ def load_images(path):
     image_files = list(path.glob("*"))
     image_ids = [f.name for f in image_files]
 
-    pipeline_logger.info(f"Found {len(image_files)} files in {path}")
+    LOGGER.info(f"Found {len(image_files)} files in {path}")
 
     # Parallel load
     with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
@@ -56,7 +57,7 @@ def load_images(path):
     # Keep only successfully loaded images
     valid_images = [img for img in images if img is not None]
 
-    pipeline_logger.info(
+    LOGGER.info(
         f"Loaded {len(valid_images)} / {len(image_files)} images successfully."
     )
 
@@ -81,10 +82,10 @@ def load_labels(path):
     """
     import pandas as pd
 
-    pipeline_logger.info(f"Loading labels from: {path}")
+    LOGGER.info(f"Loading labels from: {path}")
 
     labels = pd.read_csv(path).values
 
-    pipeline_logger.info(f"Loaded {labels.shape[0]} labels.")
+    LOGGER.info(f"Loaded {labels.shape[0]} labels.")
 
     return labels[:, 1]

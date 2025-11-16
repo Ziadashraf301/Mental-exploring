@@ -50,7 +50,7 @@ class Config:
     
     def _setup_directories(self):
         """Create output directories if they don't exist"""
-        for dir_path in [self.models_dir, self.plots_dir, self.logs_dir]:
+        for dir_path in [self.models_dir, self.plots_dir]:
             Path(dir_path).mkdir(parents=True, exist_ok=True)
     
     # ==================== DATA PATHS ====================
@@ -88,10 +88,19 @@ class Config:
     def plots_dir(self) -> str:
         return self.config['output']['plots_dir']
     
+    # ==================== LOGGING ====================
     @property
-    def logs_dir(self) -> str:
-        return self.config['output']['logs_dir']
+    def log_level(self) -> str:
+        return self.config['logging']['level']
     
+    @property
+    def log_file(self) -> str:
+        return self.config['logging']['log_file']
+    
+    @property
+    def console_output(self) -> bool:
+        return self.config['logging']['console_output']
+
     # ==================== PREPROCESSING ====================
     @property
     def image_size(self) -> tuple:
@@ -278,7 +287,7 @@ class Config:
 # Singleton instance
 _config_instance = None
 
-def get_config(config_path: str = "config/train_config.yaml") -> Config:
+def get_train_config(config_path: str = "config/train_config.yaml") -> Config:
     """
     Get or create configuration instance (Singleton pattern)
     
@@ -298,7 +307,7 @@ def get_config(config_path: str = "config/train_config.yaml") -> Config:
     return _config_instance
 
 
-def reload_config(config_path: str = "config/train_config.yaml") -> Config:
+def reload_train_config(config_path: str = "config/train_config.yaml") -> Config:
     """
     Force reload of configuration
     
@@ -319,5 +328,5 @@ def reload_config(config_path: str = "config/train_config.yaml") -> Config:
 
 if __name__ == "__main__":
     # Test configuration loading
-    config = get_config()
+    config = get_train_config()
     config.print_config()

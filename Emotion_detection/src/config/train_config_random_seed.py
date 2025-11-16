@@ -2,10 +2,13 @@ import os
 import random
 import numpy as np
 import tensorflow as tf
-from src.logger.train_logger import pipeline_logger
+from src.logger.train_logger import get_logger
 
 def set_random_seeds(config):
     """Set random seeds for reproducibility"""
+    
+    LOGGER = get_logger()
+   
     seeds = config.random_seeds
     
     # Python
@@ -20,4 +23,4 @@ def set_random_seeds(config):
     # Set for reproducibility
     os.environ['PYTHONHASHSEED'] = str(seeds['python_seed'])
     
-    pipeline_logger.info(f"Random seeds set: {seeds}")
+    LOGGER.info(f"Random seeds set: {seeds}")

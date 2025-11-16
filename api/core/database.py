@@ -137,6 +137,46 @@ class Database:
             )
             await session.commit()
     
+    async def delete_user(self, user_id: str):
+        """Delete user and all their predictions"""
+        from sqlalchemy import delete
+        
+        async with self.async_session() as session:
+            # Delete user (cascade will delete predictions)
+            await session.execute(
+                delete(User).where(User.id == user_id)
+            )
+            await session.commit()
+    
+    async def update_user(self, user_id: str, name: str = None, email: str = None):
+        """Update user information"""
+        from sqlalchemy import update
+        
+        async with self.async_session() as session:
+            update_data = {}
+            if name:
+                update_data['name'] = name
+            if email:
+                update_data['email'] = email
+            
+            if update_data:
+                await session.execute(
+                    update(User)
+                    .where(User.id == user_id)
+                    .values(**update_data)
+                )
+                await session.commit()
+    
+    async def check_email_exists(self, email: str) -> bool:
+        """Check if email already exists"""
+        from sqlalchemy import select
+        
+        async with self.async_session() as session:
+            result = await session.execute(
+                select(User).where(User.email == email)
+            )
+            return result.scalar_one_or_none() is not None
+    
     # ===========================================
     # PREDICTION OPERATIONS
     # ===========================================
@@ -207,7 +247,7 @@ class Database:
                     "service_type": p.service_type,
                     "prediction": p.prediction,
                     "confidence": p.confidence,
-                    "created_at": p.created_at.isoformat()
+                    "created_at": p.created_at
                 }
                 for p in predictions
             ]
@@ -281,7 +321,7 @@ class Database:
             
             daily_result = await session.execute(daily_query)
             predictions_by_date = [
-                {"date": row.date.isoformat(), "count": row.count}
+                {"date": row.date, "count": row.count}
                 for row in daily_result
             ]
             
@@ -292,4 +332,153 @@ class Database:
                 "avg_inference_time": avg_inference_time,
                 "predictions_by_service": predictions_by_service,
                 "predictions_by_date": predictions_by_date
+            }
+    
+    async def get_predictions_count_since(self, since: datetime) -> int:
+        """Get count of predictions since a specific datetime"""
+        from sqlalchemy import select, func
+        
+        async with self.async_session() as session:
+            result = await session.execute(
+                select(func.count(Prediction.id))
+                .where(Prediction.created_at >= since)
+            )
+            return result.scalar() or 0
+    
+    async def get_active_users_since(self, since: datetime) -> int:
+        """Get count of active users since a specific datetime"""
+        from sqlalchemy import select, func
+        
+        async with self.async_session() as session:
+            result = await session.execute(
+                select(func.count(func.distinct(Prediction.user_id)))
+                .where(Prediction.created_at >= since)
+            )
+            return result.scalar() or 0
+    
+    async def get_prediction_distribution(self, days: int = 7, service_type: str = None):
+        """Get distribution of predictions by outcome, confidence, and hour"""
+        from sqlalchemy import select, func, case
+        
+        start_date = datetime.now() - timedelta(days=days)
+        
+        async with self.async_session() as session:
+            # Base query
+            base_where = [Prediction.created_at >= start_date]
+            if service_type:
+                base_where.append(Prediction.service_type == service_type)
+            
+            # Distribution by outcome
+            outcome_query = select(
+                Prediction.prediction,
+                func.count(Prediction.id).label('count')
+            ).where(*base_where).group_by(Prediction.prediction)
+            
+            outcome_result = await session.execute(outcome_query)
+            by_outcome = {row.prediction: row.count for row in outcome_result}
+            
+            # Distribution by confidence range
+            confidence_ranges = [
+                ('0.0-0.5', 0.0, 0.5),
+                ('0.5-0.7', 0.5, 0.7),
+                ('0.7-0.85', 0.7, 0.85),
+                ('0.85-0.95', 0.85, 0.95),
+                ('0.95-1.0', 0.95, 1.0)
+            ]
+            
+            by_confidence_range = {}
+            for label, min_conf, max_conf in confidence_ranges:
+                result = await session.execute(
+                    select(func.count(Prediction.id))
+                    .where(
+                        *base_where,
+                        Prediction.confidence >= min_conf,
+                        Prediction.confidence < max_conf
+                    )
+                )
+                by_confidence_range[label] = result.scalar() or 0
+            
+            # Distribution by hour of day
+            hour_query = select(
+                func.extract('hour', Prediction.created_at).label('hour'),
+                func.count(Prediction.id).label('count')
+            ).where(*base_where).group_by(
+                func.extract('hour', Prediction.created_at)
+            ).order_by(func.extract('hour', Prediction.created_at))
+            
+            hour_result = await session.execute(hour_query)
+            by_hour = {f"{int(row.hour):02d}": row.count for row in hour_result}
+            
+            return {
+                "by_outcome": by_outcome,
+                "by_confidence_range": by_confidence_range,
+                "by_hour": by_hour
+            }
+    
+    async def get_performance_metrics(self, days: int = 7):
+        """Get detailed performance metrics"""
+        from sqlalchemy import select, func
+        
+        start_date = datetime.now() - timedelta(days=days)
+        
+        async with self.async_session() as session:
+            # Average inference time by service
+            service_query = select(
+                Prediction.service_type,
+                func.avg(Prediction.inference_time).label('avg_time')
+            ).where(Prediction.created_at >= start_date).group_by(Prediction.service_type)
+            
+            service_result = await session.execute(service_query)
+            by_service = {row.service_type: float(row.avg_time) for row in service_result}
+            
+            # Get all inference times for percentile calculation
+            times_query = select(Prediction.inference_time).where(
+                Prediction.created_at >= start_date
+            ).order_by(Prediction.inference_time)
+            
+            times_result = await session.execute(times_query)
+            inference_times = [row[0] for row in times_result]
+            
+            # Calculate percentiles
+            percentiles = {}
+            if inference_times:
+                import numpy as np
+                percentiles = {
+                    "p50": float(np.percentile(inference_times, 50)),
+                    "p95": float(np.percentile(inference_times, 95)),
+                    "p99": float(np.percentile(inference_times, 99))
+                }
+            else:
+                percentiles = {"p50": 0.0, "p95": 0.0, "p99": 0.0}
+            
+            return {
+                "by_service": by_service,
+                "percentiles": percentiles
+            }
+    
+    async def get_database_stats(self):
+        """Get database statistics"""
+        from sqlalchemy import select, func
+        
+        async with self.async_session() as session:
+            # Total users
+            users_result = await session.execute(select(func.count(User.id)))
+            total_users = users_result.scalar() or 0
+            
+            # Total predictions
+            preds_result = await session.execute(select(func.count(Prediction.id)))
+            total_predictions = preds_result.scalar() or 0
+            
+            # Active users today
+            today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+            active_result = await session.execute(
+                select(func.count(func.distinct(User.id)))
+                .where(User.last_active >= today)
+            )
+            active_today = active_result.scalar() or 0
+            
+            return {
+                "total_users": total_users,
+                "total_predictions": total_predictions,
+                "active_users_today": active_today
             }

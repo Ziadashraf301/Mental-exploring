@@ -1,5 +1,7 @@
 from src.images.image_loader import load_images, load_labels
-from src.logger.train_logger import pipeline_logger
+from src.logger.train_logger import get_logger
+
+LOGGER = get_logger()
 
 def prepare_data_for_sklearn(images, labels):
     """
@@ -25,7 +27,7 @@ def prepare_data_for_sklearn(images, labels):
         y : numpy.ndarray
             Integer label vector.
     """
-    pipeline_logger.info("Preparing data for sklearn...")
+    LOGGER.info("Preparing data for sklearn...")
 
     n_samples = images.shape[0]
     X_flat = images.reshape(n_samples, -1)
@@ -33,7 +35,7 @@ def prepare_data_for_sklearn(images, labels):
     X_normalized = X_flat / 255.0
     y = labels.astype(int)
 
-    pipeline_logger.info(
+    LOGGER.info(
         f"Sklearn: X shape={X_normalized.shape}, y shape={y.shape}, "
         f"pixel_range=[{X_normalized.min():.3f}, {X_normalized.max():.3f}]"
     )
@@ -65,12 +67,12 @@ def prepare_data_for_tensorflow(images, labels):
         y : numpy.ndarray
             Integer label vector.
     """
-    pipeline_logger.info("Preparing data for TensorFlow...")
+    LOGGER.info("Preparing data for TensorFlow...")
 
     X_normalized = images / 255.0
     y = labels.astype(int)
 
-    pipeline_logger.info(
+    LOGGER.info(
         f"TensorFlow: X shape={X_normalized.shape}, y shape={y.shape}, "
         f"pixel_range=[{X_normalized.min():.3f}, {X_normalized.max():.3f}]"
     )
@@ -103,32 +105,32 @@ def load_and_prepare_data(images_path, labels_path, verify=True):
             'raw': {'images': images, 'labels': labels}
         }
     """
-    pipeline_logger.info("=" * 70)
-    pipeline_logger.info(f"LOADING DATA FROM: {images_path}")
-    pipeline_logger.info("=" * 70)
+    LOGGER.info("=" * 70)
+    LOGGER.info(f"LOADING DATA FROM: {images_path}")
+    LOGGER.info("=" * 70)
 
     # Step 1: Load images
-    pipeline_logger.info("Step 1: Loading images...")
+    LOGGER.info("Step 1: Loading images...")
     images, image_ids = load_images(images_path)
-    pipeline_logger.info(f"Loaded {len(images)} images")
+    LOGGER.info(f"Loaded {len(images)} images")
 
     # Step 2: Load labels
-    pipeline_logger.info("Step 2: Loading labels...")
+    LOGGER.info("Step 2: Loading labels...")
     labels = load_labels(labels_path)
-    pipeline_logger.info(f"Loaded {len(labels)} labels")
+    LOGGER.info(f"Loaded {len(labels)} labels")
 
-    # Optional validation
+    # validation
     if verify and len(images) != len(labels):
-        pipeline_logger.warning(
+        LOGGER.warning(
             f"Mismatch: {len(images)} images vs {len(labels)} labels"
         )
 
     # Step 3: Prepare transformed data
-    pipeline_logger.info("Step 3: Preparing data for ML models...")
+    LOGGER.info("Step 3: Preparing data for ML models...")
     X_sklearn, y_sklearn = prepare_data_for_sklearn(images, labels)
     X_tf, y_tf = prepare_data_for_tensorflow(images, labels)
 
-    pipeline_logger.info("Data preparation completed successfully.")
+    LOGGER.info("Data preparation completed successfully.")
 
     return {
         'sklearn': {'X': X_sklearn, 'y': y_sklearn},

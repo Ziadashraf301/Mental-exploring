@@ -17,12 +17,8 @@ from utils.mlflow_tracker import MLflowTracker
 from services.emotion_service import get_emotion_service
 
 # Import routers
-from routers import emotion
-# from api.routers import depression, sentiment, users, analytics
-
-
-# Create logs directory
-Path(settings.LOG_FILE).parent.mkdir(parents=True, exist_ok=True)
+from routers import emotion, users, analytics
+# from api.routers import depression, sentiment
 
 # Setup logging
 logging.basicConfig(
@@ -34,6 +30,9 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
+
+# Create logs directory
+Path(settings.LOG_FILE).parent.mkdir(parents=True, exist_ok=True)
 
 # Global instances
 db = None
@@ -115,7 +114,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# TODO: Add rate limiting middleware
 from middleware.rate_limiter import RateLimitMiddleware
 app.add_middleware(RateLimitMiddleware)
 
@@ -160,8 +158,8 @@ async def global_exception_handler(request: Request, exc: Exception):
 app.include_router(emotion.router)
 # app.include_router(depression.router)
 # app.include_router(sentiment.router)
-# app.include_router(users.router)
-# app.include_router(analytics.router)
+app.include_router(users.router)
+app.include_router(analytics.router)
 
 
 # ===========================================

@@ -40,7 +40,7 @@ def setup_inference_logger(log_file="logs/inference.log", log_level="INFO", cons
     formatter = logging.Formatter(log_format, datefmt='%Y-%m-%d %H:%M:%S')
     
     # File handler
-    file_handler = logging.FileHandler(log_file)
+    file_handler = logging.FileHandler(log_file, encoding="utf-8")
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
     

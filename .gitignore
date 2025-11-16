@@ -3,3 +3,4 @@ __pycache__
 mlruns
 mlartifacts
 logs
+run.txt

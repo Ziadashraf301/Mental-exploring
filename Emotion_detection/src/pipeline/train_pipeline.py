@@ -1,6 +1,6 @@
 """
 Emotion Detection Pipeline - Main Entry Point
-Reads all configuration from config.yaml
+Reads all CONFIGuration from CONFIG.yaml
 """
 
 import mlflow
@@ -9,16 +9,11 @@ import mlflow.tensorflow
 import numpy as np
 import os
 
-from src.images.image_loader import load_images, load_labels
-from src.images.data_preprocessor import prepare_data_for_sklearn, prepare_data_for_tensorflow
-from src.models.model_trainer import train_logistic_regression, train_ffn, build_cnn, train_cnn
-from src.models.model_evaluator import get_report
-from src.logger.train_logger import pipeline_logger
-from src.config.train_config_loader import reload_config
-from src.config.train_config_random_seed import set_random_seeds
-from src.config.train_config_gpu import configure_gpu
+from src.logger.train_logger import setup_train_logger
+from src.config.train_config_loader import reload_train_config
 
-def run_pipeline(config_path: str = "config/train_config.yaml"):
+
+def run_pipeline(CONFIG_path: str = "config/train_config.yaml"):
     """
     Complete ML pipeline for emotion detection.
     All settings are loaded from config.yaml
@@ -34,70 +29,88 @@ def run_pipeline(config_path: str = "config/train_config.yaml"):
         Dictionary containing all results
     """
     
-    # ================== Load Configuration ==================
-    config = reload_config(config_path)
-    pipeline_logger.info("=" * 70)
-    pipeline_logger.info("EMOTION DETECTION PIPELINE - STARTING")
-    pipeline_logger.info("=" * 70)
-    pipeline_logger.info(f"Configuration loaded from: {config_path}\n")
+    # ================== Load CONFIGuration ==================
+    CONFIG = reload_train_config(CONFIG_path)
+    
+    # Setup logger
+    LOGGER = setup_train_logger(
+        log_file=CONFIG.log_file,
+        log_level=CONFIG.log_level,
+        console_output=CONFIG.console_output
+    )
+
+    LOGGER.info("=" * 70)
+    LOGGER.info("EMOTION DETECTION PIPELINE - STARTING")
+    LOGGER.info("=" * 70)
+    LOGGER.info(f"CONFIGuration loaded from: {CONFIG_path}\n")
     
     # Print key settings
-    pipeline_logger.info("Key Settings:")
-    pipeline_logger.info(f"  - Experiment: {config.mlflow_experiment_name}")
-    pipeline_logger.info(f"  - Logistic Regression: {'Enabled' if config.lr_enabled else 'Disabled'}")
-    pipeline_logger.info(f"  - Feedforward NN: {'Enabled' if config.ffn_enabled else 'Disabled'}")
-    pipeline_logger.info(f"  - CNN: {'Enabled' if config.cnn_enabled else 'Disabled'}")
-    pipeline_logger.info(f"  - Data Augmentation: {'Enabled' if config.augmentation_enabled else 'Disabled'}")
-    pipeline_logger.info(f"  - Cross Validation: {'Enabled' if config.cv_enabled else 'Disabled'}")
+    LOGGER.info("Key Settings:")
+    LOGGER.info(f"  - Experiment: {CONFIG.mlflow_experiment_name}")
+    LOGGER.info(f"  - Logistic Regression: {'Enabled' if CONFIG.lr_enabled else 'Disabled'}")
+    LOGGER.info(f"  - Feedforward NN: {'Enabled' if CONFIG.ffn_enabled else 'Disabled'}")
+    LOGGER.info(f"  - CNN: {'Enabled' if CONFIG.cnn_enabled else 'Disabled'}")
+    LOGGER.info(f"  - Data Augmentation: {'Enabled' if CONFIG.augmentation_enabled else 'Disabled'}")
+    LOGGER.info(f"  - Cross Validation: {'Enabled' if CONFIG.cv_enabled else 'Disabled'}")
     
+    from src.config.train_config_random_seed import set_random_seeds
+    from src.config.train_config_gpu import configure_gpu
+
     # Set random seeds
-    set_random_seeds(config)
+    set_random_seeds(CONFIG)
     
-    # Configure GPU
-    configure_gpu(config)
+    # CONFIGure GPU
+    configure_gpu(CONFIG)
     
     # ================== Setup MLflow ==================
-    mlflow.set_tracking_uri(config.mlflow_tracking_uri)
-    mlflow.set_experiment(config.mlflow_experiment_name, )
+    mlflow.set_tracking_uri(CONFIG.mlflow_tracking_uri)
+    mlflow.set_experiment(CONFIG.mlflow_experiment_name, )
     mlflow.enable_system_metrics_logging()
     mlflow.autolog()
 
     # ================== Load Data ==================
-    pipeline_logger.info("\n Loading Data...")
-    pipeline_logger.info("-" * 70)
+    LOGGER.info("\n Loading Data...")
+    LOGGER.info("-" * 70)
+
+    from src.images.image_loader import load_images, load_labels
+    from src.images.data_preprocessor import prepare_data_for_sklearn, prepare_data_for_tensorflow
     
-    train_images, _ = load_images(config.train_images_path)
-    train_labels = load_labels(config.train_labels_path)
-    pipeline_logger.info(f"✓ Training: {len(train_images)} images")
+    train_images, _ = load_images(CONFIG.train_images_path)
+    train_labels = load_labels(CONFIG.train_labels_path)
+    LOGGER.info(f"✓ Training: {len(train_images)} images")
     
-    test_images, _ = load_images(config.test_images_path)
-    test_labels = load_labels(config.test_labels_path)
-    pipeline_logger.info(f"✓ Test: {len(test_images)} images")
+    test_images, _ = load_images(CONFIG.test_images_path)
+    test_labels = load_labels(CONFIG.test_labels_path)
+    LOGGER.info(f"✓ Test: {len(test_images)} images")
     
     # ================== Preprocess Data ==================
-    pipeline_logger.info("\n Preprocessing Data...")
-    pipeline_logger.info("-" * 70)
+    LOGGER.info("\n Preprocessing Data...")
+    LOGGER.info("-" * 70)
     
     X_train_sk, y_train_sk = prepare_data_for_sklearn(train_images, train_labels)
     X_test_sk, y_test_sk = prepare_data_for_sklearn(test_images, test_labels)
-    pipeline_logger.info(f"✓ Sklearn data prepared: {X_train_sk.shape}")
+    LOGGER.info(f"✓ Sklearn data prepared: {X_train_sk.shape}")
     
     X_train_tf, y_train_tf = prepare_data_for_tensorflow(train_images, train_labels)
     X_test_tf, y_test_tf = prepare_data_for_tensorflow(test_images, test_labels)
-    pipeline_logger.info(f"✓ TensorFlow data prepared: {X_train_tf.shape}")
+    LOGGER.info(f"✓ TensorFlow data prepared: {X_train_tf.shape}")
     
     # Store results
     results = {}
     
+
+    from src.models.model_trainer import train_logistic_regression, train_ffn, build_cnn, train_cnn
+    from src.models.model_evaluator import get_report
+    
     # ================== Train Sklearn Models ==================
-    if config.lr_enabled or config.ffn_enabled:
-        pipeline_logger.info("\n Training Sklearn Models...")
-        pipeline_logger.info("=" * 70)
+    if CONFIG.lr_enabled or CONFIG.ffn_enabled:
+        LOGGER.info("\n Training Sklearn Models...")
+        LOGGER.info("=" * 70)
         
         # Train Logistic Regression
-        if config.lr_enabled:            
+        if CONFIG.lr_enabled:            
             with mlflow.start_run(run_name="logistic_regression"):
-                pipeline_logger.info("\n  → Training Logistic Regression...")
+                LOGGER.info("\n  → Training Logistic Regression...")
                 
                 # Log hyperparameters
                 mlflow.log_params({
@@ -106,7 +119,7 @@ def run_pipeline(config_path: str = "config/train_config.yaml"):
                     "test_samples": len(X_test_sk),
                     "input_features": X_train_sk.shape[1],
                     "num_classes": len(np.unique(y_train_sk)),
-                    **{f"lr_{k}": v for k, v in config.lr_params.items()}
+                    **{f"lr_{k}": v for k, v in CONFIG.lr_params.items()}
                 })
                 
                 # Train model
@@ -116,7 +129,7 @@ def run_pipeline(config_path: str = "config/train_config.yaml"):
                 metrics_lr = get_report(
                     lr_model, X_train_sk, y_train_sk, X_test_sk, y_test_sk,
                     model_type='sklearn',
-                    save_path=f'{config.plots_dir}/lr_report'
+                    save_path=f'{CONFIG.plots_dir}/lr_report'
                 )
                 
                 # Log metrics
@@ -134,25 +147,25 @@ def run_pipeline(config_path: str = "config/train_config.yaml"):
                 })
                 
                 # Log artifacts
-                if os.path.exists(f"{config.plots_dir}/lr_report_metrics.png"):
-                    mlflow.log_artifact(f"{config.plots_dir}/lr_report_metrics.png")
+                if os.path.exists(f"{CONFIG.plots_dir}/lr_report_metrics.png"):
+                    mlflow.log_artifact(f"{CONFIG.plots_dir}/lr_report_metrics.png")
                 
                 # Save and register model
-                if config.model_saving_params['save_sklearn_models']:
+                if CONFIG.model_saving_params['save_sklearn_models']:
                     model_info = mlflow.sklearn.log_model(
                         lr_model, 
                         "LogisticRegression_EmotionDetection",
                         registered_model_name="LogisticRegression_EmotionDetection"
                     )
-                    pipeline_logger.info(f"  ✓ Model registered: {model_info.model_uri}")
+                    LOGGER.info(f"  ✓ Model registered: {model_info.model_uri}")
                 
                 results['lr_metrics'] = metrics_lr
-                pipeline_logger.info("  ✓ Logistic Regression complete")
+                LOGGER.info("  ✓ Logistic Regression complete")
         
         # Train Feedforward NN
-        if config.ffn_enabled:
+        if CONFIG.ffn_enabled:
             with mlflow.start_run(run_name="feedforward_neural_network"):
-                pipeline_logger.info("\n  → Training Feedforward Neural Network...")
+                LOGGER.info("\n  → Training Feedforward Neural Network...")
                 
                 # Log hyperparameters
                 mlflow.log_params({
@@ -161,7 +174,7 @@ def run_pipeline(config_path: str = "config/train_config.yaml"):
                     "test_samples": len(X_test_sk),
                     "input_features": X_train_sk.shape[1],
                     "num_classes": len(np.unique(y_train_sk)),
-                    **{f"ffn_{k}": v for k, v in config.ffn_params.items()}
+                    **{f"ffn_{k}": v for k, v in CONFIG.ffn_params.items()}
                 })
                 
                 # Train model
@@ -171,7 +184,7 @@ def run_pipeline(config_path: str = "config/train_config.yaml"):
                 metrics_ffn = get_report(
                     ffn_model, X_train_sk, y_train_sk, X_test_sk, y_test_sk,
                     model_type='sklearn',
-                    save_path=f'{config.plots_dir}/ffn_report'
+                    save_path=f'{CONFIG.plots_dir}/ffn_report'
                 )
                 
                 # Log metrics
@@ -189,25 +202,25 @@ def run_pipeline(config_path: str = "config/train_config.yaml"):
                 })
                 
                 # Log artifacts
-                if os.path.exists(f"{config.plots_dir}/ffn_report_metrics.png"):
-                    mlflow.log_artifact(f"{config.plots_dir}/ffn_report_metrics.png")
+                if os.path.exists(f"{CONFIG.plots_dir}/ffn_report_metrics.png"):
+                    mlflow.log_artifact(f"{CONFIG.plots_dir}/ffn_report_metrics.png")
                 
                 # Save and register model
-                if config.model_saving_params['save_sklearn_models']:
+                if CONFIG.model_saving_params['save_sklearn_models']:
                     model_info = mlflow.sklearn.log_model(
                         ffn_model, 
                         "FeedforwardNN_EmotionDetection",
                         registered_model_name="FeedforwardNN_EmotionDetection"
                     )
-                    pipeline_logger.info(f"  ✓ Model registered: {model_info.model_uri}")
+                    LOGGER.info(f"  ✓ Model registered: {model_info.model_uri}")
                 
                 results['ffn_metrics'] = metrics_ffn
-                pipeline_logger.info("  ✓ Feedforward NN complete")
+                LOGGER.info("  ✓ Feedforward NN complete")
     
     # ================== Train CNN ==================
-    if config.cnn_enabled:
-        pipeline_logger.info("\n Training CNN Model...")
-        pipeline_logger.info("=" * 70)
+    if CONFIG.cnn_enabled:
+        LOGGER.info("\n Training CNN Model...")
+        LOGGER.info("=" * 70)
         
         with mlflow.start_run(run_name="cnn_model"):
             # Log hyperparameters
@@ -222,7 +235,7 @@ def run_pipeline(config_path: str = "config/train_config.yaml"):
             }
             
             # Add training parameters (flatten nested dicts)
-            for key, value in config.cnn_training_params.items():
+            for key, value in CONFIG.cnn_training_params.items():
                 if isinstance(value, dict):
                     for nested_key, nested_value in value.items():
                         cnn_params[f"cnn_{key}_{nested_key}"] = str(nested_value)
@@ -234,23 +247,23 @@ def run_pipeline(config_path: str = "config/train_config.yaml"):
             # Build and train
             cnn_model = build_cnn()
             
-            if config.cv_enabled:
+            if CONFIG.cv_enabled:
                 from sklearn.model_selection import KFold
 
-                k = config.cv_params["k_folds"]
-                shuffle = config.cv_params["shuffle"]
-                random_state = config.cv_params["random_state"]
+                k = CONFIG.cv_params["k_folds"]
+                shuffle = CONFIG.cv_params["shuffle"]
+                random_state = CONFIG.cv_params["random_state"]
 
                 kf = KFold(n_splits=k, shuffle=shuffle, random_state=random_state)
 
                 fold_train_acc = []
                 fold_val_acc = []
 
-                pipeline_logger.info(f"Running {k}-Fold Cross Validation...\n")
+                LOGGER.info(f"Running {k}-Fold Cross Validation...\n")
 
                 for fold, (train_idx, val_idx) in enumerate(kf.split(X_train_tf)):
                     
-                    pipeline_logger.info(f"🔸 Fold {fold+1}/{k}")
+                    LOGGER.info(f"🔸 Fold {fold+1}/{k}")
 
                     X_train_fold, X_val_fold = X_train_tf[train_idx], X_train_tf[val_idx]
                     y_train_fold, y_val_fold = y_train_tf[train_idx], y_train_tf[val_idx]
@@ -265,9 +278,9 @@ def run_pipeline(config_path: str = "config/train_config.yaml"):
                             y_train=y_train_fold,
                             X_val=X_val_fold,
                             y_val=y_val_fold,
-                            batch_size=config.cnn_batch_size,
-                            epochs=config.cnn_epochs,
-                            augmentation_params=config.augmentation_params
+                            batch_size=CONFIG.cnn_batch_size,
+                            epochs=CONFIG.cnn_epochs,
+                            augmentation_params=CONFIG.augmentation_params
                         )
 
                         # Evaluate fold
@@ -276,7 +289,7 @@ def run_pipeline(config_path: str = "config/train_config.yaml"):
                             X_train_fold, y_train_fold,
                             X_val_fold, y_val_fold,
                             model_type="tensorflow",
-                            save_path=f"{config.plots_dir}/cnn_fold{fold+1}_report.png"
+                            save_path=f"{CONFIG.plots_dir}/cnn_fold{fold+1}_report.png"
                         )
 
                         tr_acc = metrics_cnn["train"]["accuracy"]
@@ -292,11 +305,11 @@ def run_pipeline(config_path: str = "config/train_config.yaml"):
                         })
 
                         # Log plot
-                        plot_path = f"{config.plots_dir}/cnn_fold{fold+1}_report.png"
+                        plot_path = f"{CONFIG.plots_dir}/cnn_fold{fold+1}_report.png"
                         if os.path.exists(plot_path):
                             mlflow.log_artifact(plot_path)
 
-                        pipeline_logger.info(
+                        LOGGER.info(
                             f"Fold {fold+1} completed — Train Acc: {tr_acc:.4f}, Val Acc: {va_acc:.4f}"
                         )
 
@@ -309,7 +322,7 @@ def run_pipeline(config_path: str = "config/train_config.yaml"):
                     "avg_val_accuracy": avg_val
                 })
 
-                pipeline_logger.info(
+                LOGGER.info(
                     f"\n🏁 K-Fold Complete — Avg Train Acc: {avg_train:.4f}, "
                     f"Avg Val Acc: {avg_val:.4f}"
                 )
@@ -323,7 +336,7 @@ def run_pipeline(config_path: str = "config/train_config.yaml"):
             #       CASE 2 — NORMAL TRAINING (NO CV)
             # -----------------------------------------------
             else:
-                pipeline_logger.info("Training CNN WITHOUT Cross Validation...")
+                LOGGER.info("Training CNN WITHOUT Cross Validation...")
 
                 cnn_model, history = train_cnn(
                     model=cnn_model,
@@ -331,9 +344,9 @@ def run_pipeline(config_path: str = "config/train_config.yaml"):
                     y_train=y_train_tf,
                     X_val=X_test_tf,
                     y_val=y_test_tf,
-                    batch_size=config.cnn_batch_size,
-                    epochs=config.cnn_epochs,
-                    augmentation_params=config.augmentation_params
+                    batch_size=CONFIG.cnn_batch_size,
+                    epochs=CONFIG.cnn_epochs,
+                    augmentation_params=CONFIG.augmentation_params
                 )
 
                 # Evaluate
@@ -342,7 +355,7 @@ def run_pipeline(config_path: str = "config/train_config.yaml"):
                     X_train_tf, y_train_tf,
                     X_test_tf, y_test_tf,
                     model_type="tensorflow",
-                    save_path=f"{config.plots_dir}/cnn_report.png"
+                    save_path=f"{CONFIG.plots_dir}/cnn_report.png"
                 )
 
                 
@@ -361,22 +374,22 @@ def run_pipeline(config_path: str = "config/train_config.yaml"):
                 })
                 
                 # Log artifacts
-                if os.path.exists(f"{config.plots_dir}/cnn_report_metrics.png"):
-                    mlflow.log_artifact(f"{config.plots_dir}/cnn_report_metrics.png")
+                if os.path.exists(f"{CONFIG.plots_dir}/cnn_report_metrics.png"):
+                    mlflow.log_artifact(f"{CONFIG.plots_dir}/cnn_report_metrics.png")
                 
                 # Save model locally
-                if config.model_saving_params['save_cnn_model']:
-                    save_format = config.model_saving_params['save_format']
-                    model_path = f"{config.models_dir}/CNN_emotion_detection.{save_format}"
+                if CONFIG.model_saving_params['save_cnn_model']:
+                    save_format = CONFIG.model_saving_params['save_format']
+                    model_path = f"{CONFIG.models_dir}/CNN_emotion_detection.{save_format}"
                     
                     # Create directory if it doesn't exist
-                    os.makedirs(config.models_dir, exist_ok=True)
+                    os.makedirs(CONFIG.models_dir, exist_ok=True)
                     
                     cnn_model.save(model_path)
-                    pipeline_logger.info(f"  ✓ Model saved locally to {model_path}")
+                    LOGGER.info(f"  ✓ Model saved locally to {model_path}")
                 
                 # Register model in MLflow
-                if config.model_saving_params['save_cnn_model']:
+                if CONFIG.model_saving_params['save_cnn_model']:
                     # Create input example for signature
                     input_example = X_train_tf[:1]
                     
@@ -386,65 +399,65 @@ def run_pipeline(config_path: str = "config/train_config.yaml"):
                         registered_model_name="CNN_EmotionDetection",
                         input_example=input_example
                     )
-                    pipeline_logger.info(f"  ✓ Model registered: {model_info.model_uri}")
+                    LOGGER.info(f"  ✓ Model registered: {model_info.model_uri}")
                 
             results['cnn_metrics'] = metrics_cnn
-            pipeline_logger.info("  ✓ CNN training complete")
+            LOGGER.info("  ✓ CNN training complete")
     
     # ================== Summary ==================
-    pipeline_logger.info("\n Results Summary")
-    pipeline_logger.info("=" * 70)
+    LOGGER.info("\n Results Summary")
+    LOGGER.info("=" * 70)
     
     if results:
-        pipeline_logger.info(f"{'Model':<25} {'Test Accuracy':<20} {'Test Loss':<15}")
-        pipeline_logger.info("-" * 70)
+        LOGGER.info(f"{'Model':<25} {'Test Accuracy':<20} {'Test Loss':<15}")
+        LOGGER.info("-" * 70)
         
         best_model = ("None", 0.0)
         
         if 'lr_metrics' in results:
             acc = results['lr_metrics']['test']["accuracy"] * 100
             loss = results['lr_metrics']['test']['logloss']
-            pipeline_logger.info(f"{'Logistic Regression':<25} {acc:>6.2f}%{'':<13} {loss:>10.4f}")
+            LOGGER.info(f"{'Logistic Regression':<25} {acc:>6.2f}%{'':<13} {loss:>10.4f}")
             if results['lr_metrics']['test']["accuracy"] > best_model[1]:
                 best_model = ("Logistic Regression", results['lr_metrics']['test']["accuracy"])
         
         if 'ffn_metrics' in results:
             acc = results['ffn_metrics']['test']["accuracy"] * 100
             loss = results['ffn_metrics']['test']['logloss']
-            pipeline_logger.info(f"{'Feedforward NN':<25} {acc:>6.2f}%{'':<13} {loss:>10.4f}")
+            LOGGER.info(f"{'Feedforward NN':<25} {acc:>6.2f}%{'':<13} {loss:>10.4f}")
             if results['ffn_metrics']['test']["accuracy"] > best_model[1]:
                 best_model = ("Feedforward NN", results['ffn_metrics']['test']["accuracy"])
         
         if 'cnn_metrics' in results:
             acc = results['cnn_metrics']['test']["accuracy"] * 100
             loss = results['cnn_metrics']['test']['logloss']
-            pipeline_logger.info(f"{'CNN':<25} {acc:>6.2f}%{'':<13} {loss:>10.4f}")
+            LOGGER.info(f"{'CNN':<25} {acc:>6.2f}%{'':<13} {loss:>10.4f}")
             if results['cnn_metrics']['test']["accuracy"] > best_model[1]:
                 best_model = ("CNN", results['cnn_metrics']['test']["accuracy"])
         
-        pipeline_logger.info("=" * 70)
-        pipeline_logger.info(f"\n🏆 Best Model: {best_model[0]} with {best_model[1]*100:.2f}% test accuracy")
+        LOGGER.info("=" * 70)
+        LOGGER.info(f"\n🏆 Best Model: {best_model[0]} with {best_model[1]*100:.2f}% test accuracy")
         results['best_model'] = best_model
     
     # ================== Completion ==================
-    pipeline_logger.info("\n Pipeline Complete!")
-    pipeline_logger.info("=" * 70)
-    pipeline_logger.info("✓ PIPELINE FINISHED SUCCESSFULLY")
-    pipeline_logger.info("=" * 70)
-    pipeline_logger.info(f"\n📊 View MLflow UI:")
-    pipeline_logger.info(f"   mlflow ui --backend-store-uri {config.mlflow_tracking_uri}")
-    pipeline_logger.info(f"   Then open: http://localhost:5000")
-    pipeline_logger.info(f"\n📁 Output Locations:")
-    pipeline_logger.info(f"   Models: {config.models_dir}/")
-    pipeline_logger.info(f"   Plots:  {config.plots_dir}/")
-    pipeline_logger.info(f"   Logs:   {config.logs_dir}/pipeline.log")
-    pipeline_logger.info(f"\n📦 Registered Models in MLflow Model Registry:")
-    if config.lr_enabled and config.model_saving_params['save_sklearn_models']:
-        pipeline_logger.info("   - LogisticRegression_EmotionDetection")
-    if config.ffn_enabled and config.model_saving_params['save_sklearn_models']:
-        pipeline_logger.info("   - FeedforwardNN_EmotionDetection")
-    if config.cnn_enabled and config.model_saving_params['save_cnn_model']:
-        pipeline_logger.info("   - CNN_EmotionDetection")
-    pipeline_logger.info("=" * 70)
+    LOGGER.info("\n Pipeline Complete!")
+    LOGGER.info("=" * 70)
+    LOGGER.info("✓ PIPELINE FINISHED SUCCESSFULLY")
+    LOGGER.info("=" * 70)
+    LOGGER.info(f"\n📊 View MLflow UI:")
+    LOGGER.info(f"   mlflow ui --backend-store-uri {CONFIG.mlflow_tracking_uri}")
+    LOGGER.info(f"   Then open: http://localhost:5000")
+    LOGGER.info(f"\n📁 Output Locations:")
+    LOGGER.info(f"   Models: {CONFIG.models_dir}/")
+    LOGGER.info(f"   Plots:  {CONFIG.plots_dir}/")
+    LOGGER.info(f"   Logs:   {CONFIG.log_file}")
+    LOGGER.info(f"\n📦 Registered Models in MLflow Model Registry:")
+    if CONFIG.lr_enabled and CONFIG.model_saving_params['save_sklearn_models']:
+        LOGGER.info("   - LogisticRegression_EmotionDetection")
+    if CONFIG.ffn_enabled and CONFIG.model_saving_params['save_sklearn_models']:
+        LOGGER.info("   - FeedforwardNN_EmotionDetection")
+    if CONFIG.cnn_enabled and CONFIG.model_saving_params['save_cnn_model']:
+        LOGGER.info("   - CNN_EmotionDetection")
+    LOGGER.info("=" * 70)
     
     return results

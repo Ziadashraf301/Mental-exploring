@@ -6,7 +6,7 @@
 # MLFLOW SETTINGS
 # ============================================================
 mlflow:
-  tracking_uri: "http://localhost:5000"
+  tracking_uri: "http://localhost:5009"
   model_name: "CNN_EmotionDetection"
   model_version: "1"           # Use specific version
   # model_stage: "Production"  # OR use stage (uncomment to use)

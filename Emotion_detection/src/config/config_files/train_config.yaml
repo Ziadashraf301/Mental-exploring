@@ -18,7 +18,7 @@ data:
 # ============================================================
 mlflow:
   experiment_name: "EmotionDetection"
-  tracking_uri: "http://localhost:5000"  # Can be local path or remote server URL
+  tracking_uri: "http://localhost:5009"  # Can be local path or remote server URL
   # tracking_uri: "http://localhost:5000"  # For remote tracking
 
 # ============================================================
@@ -27,7 +27,14 @@ mlflow:
 output:
   models_dir: "models"
   plots_dir: "plots"
-  logs_dir: "logs"
+
+# ============================================================
+# LOGGING SETTINGS
+# ============================================================
+logging:
+  level: "INFO"                # DEBUG, INFO, WARNING, ERROR
+  log_file: "logs/train.log"
+  console_output: true
 
 # ============================================================
 # IMAGE PREPROCESSING
@@ -41,8 +48,8 @@ preprocessing:
 # LOGISTIC REGRESSION PARAMETERS
 # ============================================================
 logistic_regression:
-  enabled: false           # Set to false to skip this model
-  max_iter: 500
+  enabled: true           # Set to false to skip this model
+  max_iter: 20
   penalty: "l2"           # "l1", "l2", "elasticnet", or "none"
   solver: "lbfgs"         # "lbfgs", "saga", "liblinear"
   C: 1.0                  # Inverse of regularization strength
@@ -70,7 +77,7 @@ feedforward_nn:
 # CNN MODEL ARCHITECTURE
 # ============================================================
 cnn_architecture:
-  enabled: true           # Set to false to skip this model
+  enabled: false           # Set to false to skip this model
   input_shape: [48, 48, 3]  # [height, width, channels]
   
   # Convolutional Layers
@@ -172,15 +179,6 @@ evaluation:
   save_plots: true
   plot_dpi: 150
   plot_format: "png"      # "png", "jpg", "pdf"
-
-# ============================================================
-# LOGGING SETTINGS
-# ============================================================
-logging:
-  level: "INFO"           # "DEBUG", "INFO", "WARNING", "ERROR"
-  console_output: true
-  file_output: true
-  log_file: "pipeline.log"
 
 # ============================================================
 # PERFORMANCE SETTINGS

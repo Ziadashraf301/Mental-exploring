@@ -1,10 +1,11 @@
 import tensorflow as tf
-from src.logger.train_logger import pipeline_logger
+from src.logger.train_logger import get_logger
 import os
 
 
 def configure_gpu(config):
     """Configure GPU settings"""
+    LOGGER = get_logger()
     if config.use_gpu:
         gpus = tf.config.list_physical_devices('GPU')
         if gpus:
@@ -20,11 +21,11 @@ def configure_gpu(config):
                         memory_limit=int(1024 * config.gpu_memory_fraction)
                     )]
                 )
-                pipeline_logger.info(f"GPU configured: {len(gpus)} GPU(s) available")
+                LOGGER.info(f"GPU configured: {len(gpus)} GPU(s) available")
             except RuntimeError as e:
-                pipeline_logger.warning(f"GPU configuration error: {e}")
+                LOGGER.warning(f"GPU configuration error: {e}")
         else:
-            pipeline_logger.warning("No GPU found, using CPU")
+            LOGGER.warning("No GPU found, using CPU")
     else:
         os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
-        pipeline_logger.info("GPU disabled, using CPU")
+        LOGGER.info("GPU disabled, using CPU")

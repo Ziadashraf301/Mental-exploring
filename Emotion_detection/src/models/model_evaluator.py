@@ -1,7 +1,9 @@
-from src.logger.train_logger import pipeline_logger
+from src.logger.train_logger import get_logger
 from src.utils.metrics_utils import get_predictions, compute_metrics
 from src.utils.plot_utils import plot_metrics
 from src.utils.report_utils import print_report
+
+LOGGER = get_logger()
 
 def get_report(model, x_train, y_train, x_test, y_test, model_type='sklearn', save_path=None):
     """
@@ -26,7 +28,7 @@ def get_report(model, x_train, y_train, x_test, y_test, model_type='sklearn', sa
         Dictionary with train/test accuracy, F1, and log loss (if applicable).
     """
     
-    pipeline_logger.info(f"Evaluating {model_type} model...")
+    LOGGER.info(f"Evaluating {model_type} model...")
 
     # 1) predictions
     y_pred_train, prob_train = get_predictions(model, x_train, model_type)
@@ -43,7 +45,7 @@ def get_report(model, x_train, y_train, x_test, y_test, model_type='sklearn', sa
     plot_metrics(train_m, test_m, save_path)
 
     # 5) logging
-    pipeline_logger.info(
+    LOGGER.info(
         f"{model_type} model - Test Acc: {test_m['accuracy']:.3f}, "
         f"F1: {test_m['f1']:.3f}, LogLoss: {test_m['logloss']:.3f}"
     )
