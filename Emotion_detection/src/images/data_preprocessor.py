@@ -1,5 +1,5 @@
-from src.images.image_loader import load_images, load_labels
-from src.logger.train_logger import get_logger
+from Emotion_detection.src.images.image_loader import load_images, load_labels
+from Emotion_detection.src.logger.train_logger import get_logger
 
 LOGGER = get_logger()
 

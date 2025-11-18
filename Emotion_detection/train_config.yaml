@@ -8,18 +8,17 @@
 # DATA PATHS
 # ============================================================
 data:
-  train_images_path: "data/train/"
-  train_labels_path: "data/labels/train_dataset_labels.csv"
-  test_images_path: "data/test/"
-  test_labels_path: "data/labels/test_dataset_labels.csv"
+  train_images_path: "data/Emotion_detection/raw/train/"
+  train_labels_path: "data/Emotion_detection/raw/labels/train_dataset_labels.csv"
+  test_images_path: "data/Emotion_detection/raw/test/"
+  test_labels_path: "data/Emotion_detection/raw/labels/test_dataset_labels.csv"
 
 # ============================================================
 # MLFLOW SETTINGS
 # ============================================================
 mlflow:
   experiment_name: "EmotionDetection"
-  tracking_uri: "http://localhost:5009"  # Can be local path or remote server URL
-  # tracking_uri: "http://localhost:5000"  # For remote tracking
+  tracking_uri: "http://ec2-98-93-3-121.compute-1.amazonaws.com:5000/"
 
 # ============================================================
 # OUTPUT DIRECTORIES
@@ -49,7 +48,7 @@ preprocessing:
 # ============================================================
 logistic_regression:
   enabled: true           # Set to false to skip this model
-  max_iter: 20
+  max_iter: 100
   penalty: "l2"           # "l1", "l2", "elasticnet", or "none"
   solver: "lbfgs"         # "lbfgs", "saga", "liblinear"
   C: 1.0                  # Inverse of regularization strength
@@ -60,7 +59,7 @@ logistic_regression:
 # FEEDFORWARD NEURAL NETWORK (MLP) PARAMETERS
 # ============================================================
 feedforward_nn:
-  enabled: false           # Set to false to skip this model
+  enabled: True           # Set to false to skip this model
   hidden_layer_sizes: [64, 32, 16]  # List of hidden layer sizes
   activation: "relu"      # "relu", "tanh", "logistic"
   solver: "adam"          # "adam", "sgd", "lbfgs"
@@ -77,7 +76,7 @@ feedforward_nn:
 # CNN MODEL ARCHITECTURE
 # ============================================================
 cnn_architecture:
-  enabled: false           # Set to false to skip this model
+  enabled: true           # Set to false to skip this model
   input_shape: [48, 48, 3]  # [height, width, channels]
   
   # Convolutional Layers

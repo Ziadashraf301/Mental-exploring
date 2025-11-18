@@ -13,7 +13,7 @@ import logging
 
 from core.schemas import EmotionRequest, EmotionResponse, FaceEmotion
 from core.database import Database
-from services.emotion_service import get_emotion_service
+from services.emotion_service.emotion_service import get_emotion_service
 from utils.mlflow_tracker import MLflowTracker
 from config import settings
 

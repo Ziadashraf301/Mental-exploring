@@ -2,7 +2,7 @@ import os
 import random
 import numpy as np
 import tensorflow as tf
-from src.logger.train_logger import get_logger
+from Emotion_detection.src.logger.train_logger import get_logger
 
 def set_random_seeds(config):
     """Set random seeds for reproducibility"""

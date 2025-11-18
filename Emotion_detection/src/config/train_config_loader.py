@@ -12,7 +12,7 @@ from typing import Dict, Any
 class Config:
     """Configuration class that loads and provides access to all pipeline settings"""
     
-    def __init__(self, config_path: str = "config/config.yaml"):
+    def __init__(self, config_path: str = "Emotion_detection/train_config.yaml"):
         """
         Initialize configuration from YAML file
         
@@ -49,9 +49,10 @@ class Config:
                 raise ValueError(f"Missing required configuration section: {section}")
     
     def _setup_directories(self):
-        """Create output directories if they don't exist"""
+        """Create output directories if they don't exist and show paths"""
         for dir_path in [self.models_dir, self.plots_dir]:
-            Path(dir_path).mkdir(parents=True, exist_ok=True)
+            full_path = Path(dir_path).resolve()
+            full_path.mkdir(parents=True, exist_ok=True)
     
     # ==================== DATA PATHS ====================
     @property
@@ -287,7 +288,7 @@ class Config:
 # Singleton instance
 _config_instance = None
 
-def get_train_config(config_path: str = "config/train_config.yaml") -> Config:
+def get_train_config(config_path: str = "Emotion_detection/train_config.yaml") -> Config:
     """
     Get or create configuration instance (Singleton pattern)
     
@@ -307,7 +308,7 @@ def get_train_config(config_path: str = "config/train_config.yaml") -> Config:
     return _config_instance
 
 
-def reload_train_config(config_path: str = "config/train_config.yaml") -> Config:
+def reload_train_config(config_path: str = "Emotion_detection/train_config.yaml") -> Config:
     """
     Force reload of configuration
     

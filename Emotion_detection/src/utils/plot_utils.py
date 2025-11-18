@@ -1,7 +1,5 @@
 import matplotlib.pyplot as plt
 
-import matplotlib.pyplot as plt
-
 def plot_metrics(train_m, test_m, save_path=None):
     """Plot accuracy, F1, precision, recall, and log loss."""
     

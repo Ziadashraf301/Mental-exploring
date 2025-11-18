@@ -4,3 +4,7 @@ mlruns
 mlartifacts
 logs
 run.txt
+.env
+airflow_logs
+postgres_airflow
+postgres_mlflow

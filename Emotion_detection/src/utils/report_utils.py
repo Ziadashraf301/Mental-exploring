@@ -29,8 +29,8 @@ def print_report(model_type, train_m, test_m, y_test, y_pred_test):
 
     print("=" * 60)
     print("\nClassification Report:")
-    print(classification_report(
+    print("\n", (classification_report(
         y_test, 
         y_pred_test, 
-        target_names=['Sad', 'Happy'])
+        target_names=['Sad', 'Happy']))
     )

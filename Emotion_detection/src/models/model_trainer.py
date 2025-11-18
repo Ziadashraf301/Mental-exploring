@@ -1,11 +1,17 @@
 from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
 import tensorflow as tf
-from src.logger.train_logger import get_logger
-from src.config.train_config_loader import get_train_config
+from Emotion_detection.src.logger.train_logger import get_logger
+from Emotion_detection.src.config.train_config_loader import get_train_config
 
 LOGGER = get_logger()
-config = get_train_config()
+
+def get_config():
+    if not hasattr(get_config, "_config"):
+        get_config._config = get_train_config()
+    return get_config._config
+
+config = get_config()
 
 # --------------------------- SKLEARN MODELS ---------------------------
 

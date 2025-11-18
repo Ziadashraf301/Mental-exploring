@@ -1,7 +1,7 @@
-from src.logger.train_logger import get_logger
-from src.utils.metrics_utils import get_predictions, compute_metrics
-from src.utils.plot_utils import plot_metrics
-from src.utils.report_utils import print_report
+from Emotion_detection.src.logger.train_logger import get_logger
+from Emotion_detection.src.utils.metrics_utils import get_predictions, compute_metrics
+from Emotion_detection.src.utils.plot_utils import plot_metrics
+from Emotion_detection.src.utils.report_utils import print_report
 
 LOGGER = get_logger()
 

@@ -32,12 +32,6 @@ class Settings(BaseSettings):
     DEPRESSION_MODEL_NAME: str = "ziadashraf98765/roberta-depression-detection-lora-merged"
     DEPRESSION_MODEL_VERSION: str = "1.0"
     
-    # Emotion Detection Model
-    EMOTION_MODEL_NAME: str = "CNN_EmotionDetection"
-    EMOTION_MODEL_VERSION: str = "1"
-    EMOTION_MODEL_STAGE: str = None  # or "Production"
-    EMOTION_CONFIG_PATH: str = "../Emotion_detection/src/config/inference_config.yaml"
-    
     # Sentiment Analysis Model
     SENTIMENT_MODEL_PATH: str = "../Sentiment_analysis/models"
     SENTIMENT_VECTORIZER_PATH: str = "../Sentiment_analysis/models/vectoriser.pkl"
@@ -53,6 +47,18 @@ class Settings(BaseSettings):
     # Security (optional)
     API_KEY_ENABLED: bool = False
     API_KEY: str = ""
+
+    # Emotion Detection Model
+    EMOTION_MODEL_NAME: str = "CNN_EmotionDetection"
+    EMOTION_MODEL_VERSION: str = "1"
+    EMOTION_MODEL_STAGE: str = None  # "Production" or None
+    EMOTION_FACE_CONFIDENCE_THRESHOLD: float = 0.9
+    EMOTION_IMAGE_SIZE: List[int] = [48, 48]
+    EMOTION_NORMALIZE: bool = True
+    EMOTION_SAVE_RESULTS: bool = False
+    EMOTION_RESULTS_DIR: str = "results"
+    EMOTION_LOG_FILE: str = "logs/emotion_detection_inference.log"
+    EMOTION_LOG_LEVEL: str = "INFO"
     
     class Config:
         env_file = ".env"

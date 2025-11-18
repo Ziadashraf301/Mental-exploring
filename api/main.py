@@ -14,7 +14,7 @@ from pathlib import Path
 from config import settings
 from core.database import Database
 from utils.mlflow_tracker import MLflowTracker
-from services.emotion_service import get_emotion_service
+from services import get_emotion_service
 
 # Import routers
 from routers import emotion, users, analytics
@@ -25,7 +25,7 @@ logging.basicConfig(
     level=getattr(logging, settings.LOG_LEVEL),
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler(settings.LOG_FILE),
+        logging.FileHandler(settings.LOG_FILE, encoding='utf-8'),
         logging.StreamHandler()
     ]
 )
@@ -69,7 +69,7 @@ async def lifespan(app: FastAPI):
         # Initialize Emotion Detection Service
         logger.info("Initializing Emotion Detection Service...")
         emotion_service = get_emotion_service()
-        emotion_service.initialize(config_path=settings.EMOTION_CONFIG_PATH)
+        emotion_service.initialize()
         logger.info("✓ Emotion Detection Service initialized")
         
         # TODO: Initialize Depression Detection Service
@@ -116,7 +116,6 @@ app.add_middleware(
 
 from middleware.rate_limiter import RateLimitMiddleware
 app.add_middleware(RateLimitMiddleware)
-
 
 # ===========================================
 # EXCEPTION HANDLERS

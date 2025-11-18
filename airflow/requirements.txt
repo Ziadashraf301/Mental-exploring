@@ -1,0 +1,13 @@
+# Core
+numpy>=2.0.0,<2.3.0
+scikit-learn==1.6.1
+matplotlib==3.9.2
+
+# OpenCV
+opencv-python>=4.12
+
+# MLflow
+mlflow==3.6.0
+
+# TensorFlow
+tensorflow==2.20.0

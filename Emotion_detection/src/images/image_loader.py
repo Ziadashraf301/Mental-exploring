@@ -3,7 +3,7 @@ import os
 import numpy as np
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
-from src.logger.train_logger import get_logger
+from Emotion_detection.src.logger.train_logger import get_logger
 
 LOGGER = get_logger()
 
