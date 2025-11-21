@@ -2,7 +2,7 @@
 Emotion Detection API Router
 """
 
-from fastapi import APIRouter, File, UploadFile, HTTPException, Query, Depends, BackgroundTasks
+from fastapi import APIRouter, File, UploadFile, HTTPException, Query, Depends
 from datetime import datetime
 import tempfile
 import os
@@ -10,17 +10,15 @@ import cv2
 import numpy as np
 import time
 import logging
+from collections import Counter
 
-from core.schemas import EmotionRequest, EmotionResponse, FaceEmotion
+from core.schemas import EmotionResponse, FaceEmotion
 from core.database import Database
 from services.emotion_service.emotion_service import get_emotion_service
-from utils.mlflow_tracker import MLflowTracker
-from config import settings
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/emotion", tags=["Emotion Detection"])
-
 
 # Dependency injection
 def get_db():
@@ -29,20 +27,12 @@ def get_db():
     return db
 
 
-def get_tracker():
-    """Get MLflow tracker instance"""
-    from main import mlflow_tracker
-    return mlflow_tracker
-
-
 @router.post("/predict", response_model=EmotionResponse)
 async def predict_emotion(
-    background_tasks: BackgroundTasks,
     file: UploadFile = File(..., description="Image file (JPEG, PNG, etc.)"),
     user_id: str = Query(None, description="User identifier"),
     min_face_confidence: float = Query(None, ge=0.0, le=1.0, description="Minimum face detection confidence"),
     db: Database = Depends(get_db),
-    tracker: MLflowTracker = Depends(get_tracker)
 ):
     """
     Detect emotions in uploaded image
@@ -71,8 +61,7 @@ async def predict_emotion(
             user_id = await db.create_user(name="Anonymous")
         else:
             user = await db.get_user(user_id)
-            if not user:
-                user_id = await db.create_user(name="Anonymous")
+            user_id = user.id if user else await db.create_user(name="Anonymous")
         
         # Read uploaded file
         contents = await file.read()
@@ -114,22 +103,8 @@ async def predict_emotion(
             # Clean up temp file
             if temp_path and os.path.exists(temp_path):
                 os.unlink(temp_path)
-            
-            # Log no faces detected to MLflow
-            background_tasks.add_task(
-                tracker.log_prediction,
-                service_type="emotion",
-                prediction="no_faces_detected",
-                confidence=0.0,
-                inference_time=inference_time,
-                metadata={
-                    "faces_detected": 0,
-                    "faces_processed": 0,
-                    "message": "No faces detected in image"
-                }
-            )
-            
-            # Return response with no faces
+        
+        # Return response with no faces
             return EmotionResponse(
                 success=True,
                 faces_detected=0,
@@ -145,9 +120,10 @@ async def predict_emotion(
         # Prepare response for detected faces
         face_emotions = []
         for face_result in result["results"]:
-            face_emotions.append(FaceEmotion(
-                face_id=face_result["face_id"],
-                bounding_box=face_result["box"] if isinstance(face_result["box"], dict) else {
+            face_emotions.append(
+                FaceEmotion(
+                    face_id=face_result["face_id"],
+                    bounding_box=face_result["box"] if isinstance(face_result["box"], dict) else {
                     "x": face_result["box"][0],
                     "y": face_result["box"][1],
                     "width": face_result["box"][2],
@@ -164,11 +140,15 @@ async def predict_emotion(
         # Get average confidence
         avg_confidence = sum(f.face_confidence for f in face_emotions) / len(face_emotions) if face_emotions else 0.0
         
+        # Get most common dominant emotion
+        all_dominant = [f.dominant_emotion for f in face_emotions]
+        most_common_emotion = Counter(all_dominant).most_common(1)[0][0]
+            
         # Save to database
         prediction_id = await db.save_prediction(
             user_id=user_id,
             service_type="emotion",
-            prediction=face_emotions[0].dominant_emotion,  # Primary face emotion
+            prediction=most_common_emotion,
             confidence=avg_confidence,
             model_name=result["model_info"]["name"],
             model_version=result["model_info"]["version"],
@@ -185,20 +165,7 @@ async def predict_emotion(
                 ]
             }
         )
-        
-        # Log to MLflow (background)
-        background_tasks.add_task(
-            tracker.log_prediction,
-            service_type="emotion",
-            prediction=face_emotions[0].dominant_emotion,
-            confidence=avg_confidence,
-            inference_time=inference_time,
-            metadata={
-                "faces_detected": result["faces_detected"],
-                "faces_processed": result["faces_processed"]
-            }
-        )
-        
+          
         # Clean up temp file
         if temp_path and os.path.exists(temp_path):
             os.unlink(temp_path)

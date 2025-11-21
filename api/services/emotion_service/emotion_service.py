@@ -9,7 +9,6 @@ from services.emotion_service.emotion_pipeline import EmotionDetectionPipeline
 
 logger = logging.getLogger(__name__)
 
-
 class EmotionDetectionService:
     """
     Emotion detection service
@@ -20,7 +19,7 @@ class EmotionDetectionService:
         self.initialized = False
         self.config = settings
         self.model_info = None
-        self.pipeline = EmotionDetectionPipeline()  # <-- pipeline class instance
+        self.pipeline = EmotionDetectionPipeline()
 
     def initialize(self):
         """
@@ -69,7 +68,7 @@ class EmotionDetectionService:
             result = self.pipeline.process_image(
                 image_path=image_path,
                 min_face_confidence=min_face_confidence,
-                save_result=False
+                save_result=self.config.EMOTION_SAVE_RESULTS
             )
             return result
 

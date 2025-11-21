@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     ALLOWED_ORIGINS: List[str] = ["*"]
     
     # Database
-    DATABASE_URL: str = "sqlite+aiosqlite:///./mental_health_api.db"
+    DATABASE_URL: str = "sqlite+aiosqlite:///./database/mental_health_api.db"
     # For PostgreSQL: "postgresql+asyncpg://user:password@localhost/dbname"
     
     # MLflow Settings
@@ -33,20 +33,15 @@ class Settings(BaseSettings):
     DEPRESSION_MODEL_VERSION: str = "1.0"
     
     # Sentiment Analysis Model
-    SENTIMENT_MODEL_PATH: str = "../Sentiment_analysis/models"
-    SENTIMENT_VECTORIZER_PATH: str = "../Sentiment_analysis/models/vectoriser.pkl"
-    
-    # Rate Limiting
-    RATE_LIMIT_REQUESTS: int = 100
-    RATE_LIMIT_WINDOW: int = 60  # seconds
-    
-    # Logging
-    LOG_LEVEL: str = "INFO"
-    LOG_FILE: str = "logs/api.log"
-    
-    # Security (optional)
-    API_KEY_ENABLED: bool = False
-    API_KEY: str = ""
+    SENTIMENT_MODEL_NAME: str = "Sentiment_analysisLogisticRegression_Model"
+    SENTIMENT_MODEL_VERSION: str = "1.0"
+    SENTIMENT_MODEL_STAGE: str = "Production"
+    SENTIMENT_VACTORIZER_MODEL: str = "TFIDF_Vectorizer_Sentiment"
+    SENTIMENT_VACTORIZER_MODEL_VERSION: str = "4.0"
+    SENTIMENT_SAVE_RESULTS: bool = True
+    SENTIMENT_RESULTS_DIR: str = "results"
+    SENTIMENT_LOG_FILE: str = "logs/sentiment_service_inference.log"
+    SENTIMENT_LOG_LEVEL: str = "INFO"
 
     # Emotion Detection Model
     EMOTION_MODEL_NAME: str = "CNN_EmotionDetection"
@@ -59,10 +54,36 @@ class Settings(BaseSettings):
     EMOTION_RESULTS_DIR: str = "results"
     EMOTION_LOG_FILE: str = "logs/emotion_detection_inference.log"
     EMOTION_LOG_LEVEL: str = "INFO"
+
+    # Rate Limiting
+    RATE_LIMIT_REQUESTS: int = 100
+    RATE_LIMIT_WINDOW: int = 60  # seconds
     
+    # Logging
+    LOG_LEVEL: str = "INFO"
+    LOG_FILE: str = "logs/api.log"
+    
+    # Security
+    API_KEY_ENABLED: bool = False
+    API_KEY: str = ""
+
+    # AWS Settings
+    AWS_ACCESS_KEY_ID: str = None
+    AWS_SECRET_ACCESS_KEY: str = None
+    AWS_DEFAULT_REGION: str = None
+
     class Config:
         env_file = ".env"
         case_sensitive = True
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Set AWS credentials in environment automatically
+        if self.AWS_ACCESS_KEY_ID:
+            os.environ["AWS_ACCESS_KEY_ID"] = self.AWS_ACCESS_KEY_ID
+        if self.AWS_SECRET_ACCESS_KEY:
+            os.environ["AWS_SECRET_ACCESS_KEY"] = self.AWS_SECRET_ACCESS_KEY
+        if self.AWS_DEFAULT_REGION:
+            os.environ["AWS_DEFAULT_REGION"] = self.AWS_DEFAULT_REGION
 
 settings = Settings()

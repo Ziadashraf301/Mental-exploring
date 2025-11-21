@@ -7,10 +7,7 @@ from datetime import datetime
 from typing import Optional, Dict, List
 
 
-# ===========================================
 # USER SCHEMAS
-# ===========================================
-
 class UserCreate(BaseModel):
     """Create user request"""
     name: str = Field(..., min_length=1, max_length=100)
@@ -27,10 +24,7 @@ class UserResponse(BaseModel):
     total_requests: int = 0
 
 
-# ===========================================
 # DEPRESSION DETECTION SCHEMAS
-# ===========================================
-
 class DepressionRequest(BaseModel):
     """Depression detection request"""
     text: str = Field(..., min_length=1, max_length=5000)
@@ -57,23 +51,13 @@ class DepressionResponse(BaseModel):
     timestamp: datetime
 
 
-# ===========================================
 # EMOTION DETECTION SCHEMAS
-# ===========================================
-
-class EmotionRequest(BaseModel):
-    """Emotion detection request (for file uploads, see router)"""
-    user_id: Optional[str] = None
-    min_face_confidence: Optional[float] = Field(None, ge=0.0, le=1.0)
-    metadata: Optional[Dict] = None
-
-
 class FaceEmotion(BaseModel):
     """Single face emotion result"""
     face_id: int
     bounding_box: Dict[str, int]
     face_confidence: float
-    emotions: Dict[str, float]  # {"sad": 0.2, "happy": 0.8}
+    emotions: Dict[str, float] 
     dominant_emotion: str
 
 
@@ -90,10 +74,7 @@ class EmotionResponse(BaseModel):
     timestamp: datetime
 
 
-# ===========================================
 # SENTIMENT ANALYSIS SCHEMAS
-# ===========================================
-
 class SentimentRequest(BaseModel):
     """Sentiment analysis request"""
     text: str = Field(..., min_length=1, max_length=5000)
@@ -109,7 +90,8 @@ class SentimentRequest(BaseModel):
 
 class SentimentResponse(BaseModel):
     """Sentiment analysis response"""
-    prediction: str  # "Positive" or "Negative"
+    success: bool
+    prediction: str  
     confidence: float
     positive_probability: float
     negative_probability: float
@@ -120,10 +102,7 @@ class SentimentResponse(BaseModel):
     timestamp: datetime
 
 
-# ===========================================
 # ANALYTICS SCHEMAS
-# ===========================================
-
 class AnalyticsResponse(BaseModel):
     """Analytics response"""
     total_predictions: int
@@ -136,10 +115,7 @@ class AnalyticsResponse(BaseModel):
     timestamp: datetime
 
 
-# ===========================================
 # HEALTH CHECK SCHEMAS
-# ===========================================
-
 class HealthResponse(BaseModel):
     """Health check response"""
     status: str
@@ -149,10 +125,7 @@ class HealthResponse(BaseModel):
     timestamp: datetime
 
 
-# ===========================================
 # BATCH PREDICTION SCHEMAS
-# ===========================================
-
 class BatchDepressionRequest(BaseModel):
     """Batch depression detection request"""
     texts: List[str] = Field(..., max_items=100)

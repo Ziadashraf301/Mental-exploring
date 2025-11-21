@@ -30,23 +30,18 @@ class EmotionDetectionPipeline:
         )
         self.LOGGER = logging.getLogger(__name__)
 
-        # Initialize model and face detector placeholders
+        # Initialize Emotion model and face detector placeholders
         self.MODEL = None
         self.FACE_DETECTOR = None
 
-    # ===========================================
     # INITIALIZATION
-    # ===========================================
     def initialize_pipeline(self):
         """
         Initialize the inference pipeline
         Load config, setup logger, load model and face detector
         """
-        self.LOGGER.info("=" * 70)
         self.LOGGER.info("INITIALIZING EMOTION DETECTION INFERENCE PIPELINE")
-        self.LOGGER.info("=" * 70)
 
-        # Set MLflow tracking URI
         mlflow.set_tracking_uri(self.CONFIG.MLFLOW_TRACKING_URI)
         self.LOGGER.info(f"\n✓ MLflow Tracking URI set: {self.CONFIG.MLFLOW_TRACKING_URI}")
 
@@ -69,13 +64,9 @@ class EmotionDetectionPipeline:
             self.LOGGER.error(f"✗ Failed to initialize face detector: {str(e)}")
             raise
 
-        self.LOGGER.info("\n" + "=" * 70)
         self.LOGGER.info("PIPELINE INITIALIZATION COMPLETE")
-        self.LOGGER.info("=" * 70 + "\n")
 
-    # ===========================================
     # FACE DETECTION
-    # ===========================================
     def detect_faces(self, image_path, min_confidence=None):
         if min_confidence is None:
             min_confidence = self.CONFIG.EMOTION_FACE_CONFIDENCE_THRESHOLD
@@ -86,6 +77,7 @@ class EmotionDetectionPipeline:
             raise ValueError(f"Error: Could not load image at {image_path}")
 
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
         self.LOGGER.info("Detecting faces...")
         faces = self.FACE_DETECTOR.detect_faces(image_rgb)
 
@@ -101,9 +93,7 @@ class EmotionDetectionPipeline:
         self.LOGGER.info(f"Found {len(results)} face(s) with confidence >= {min_confidence}")
         return results
 
-    # ===========================================
     # EMOTION RECOGNITION
-    # ===========================================
     def predict_emotion(self, image_path, faces):
         image = cv2.imread(image_path)
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -147,13 +137,9 @@ class EmotionDetectionPipeline:
 
         return emotions
 
-    # ===========================================
     # MAIN PROCESSING FUNCTION
-    # ===========================================
     def process_image(self, image_path, min_face_confidence=None, save_result=False):
-        self.LOGGER.info(f"\n{'='*70}")
         self.LOGGER.info(f"PROCESSING IMAGE: {image_path}")
-        self.LOGGER.info(f"{'='*70}")
 
         try:
             faces = self.detect_faces(image_path, min_face_confidence)
@@ -189,10 +175,7 @@ class EmotionDetectionPipeline:
             if save_result or self.CONFIG.EMOTION_SAVE_RESULTS:
                 self.save_results_to_json(result)
 
-            self.LOGGER.info(f"\n{'='*70}")
             self.LOGGER.info(f"PROCESSING COMPLETE: {len(emotions)} face(s) processed")
-            self.LOGGER.info(f"{'='*70}\n")
-
             return result
 
         except Exception as e:
@@ -203,13 +186,15 @@ class EmotionDetectionPipeline:
                 "timestamp": datetime.now().isoformat(),
                 "error": str(e),
                 "faces_detected": 0,
-                "results": []
+                "results": [],
+                "message": "Error during processing"
             }
 
-    # ===========================================
     # UTILITY FUNCTIONS
-    # ===========================================
     def save_results_to_json(self, result):
+
+        os.makedirs(self.CONFIG.EMOTION_RESULTS_DIR, exist_ok=True)
+        
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"result_{timestamp}.json"
         filepath = os.path.join(self.CONFIG.EMOTION_RESULTS_DIR, filename)

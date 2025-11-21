@@ -6,7 +6,6 @@ from .database import Database, User, Prediction
 from .schemas import (
     UserCreate,
     UserResponse,
-    EmotionRequest,
     EmotionResponse,
     FaceEmotion,
     AnalyticsResponse,
@@ -19,8 +18,6 @@ __all__ = [
     'Prediction',
     'UserCreate',
     'UserResponse',
-    'EmotionRequest',
-    'EmotionResponse',
     'FaceEmotion',
     'AnalyticsResponse',
     'HealthResponse'

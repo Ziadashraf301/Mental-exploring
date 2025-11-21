@@ -13,11 +13,10 @@ from pathlib import Path
 
 from config import settings
 from core.database import Database
-from utils.mlflow_tracker import MLflowTracker
-from services import get_emotion_service
+from services import get_emotion_service, get_sentiment_service
 
 # Import routers
-from routers import emotion, users, analytics
+from routers import emotion, sentiment, users, analytics
 # from api.routers import depression, sentiment
 
 # Setup logging
@@ -36,8 +35,6 @@ Path(settings.LOG_FILE).parent.mkdir(parents=True, exist_ok=True)
 
 # Global instances
 db = None
-mlflow_tracker = None
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -45,11 +42,9 @@ async def lifespan(app: FastAPI):
     Application lifespan manager
     Handles startup and shutdown events
     """
-    global db, mlflow_tracker
+    global db
     
-    logger.info("=" * 70)
     logger.info("STARTING MENTAL HEALTH DETECTION API")
-    logger.info("=" * 70)
     
     try:
         # Initialize database
@@ -58,27 +53,22 @@ async def lifespan(app: FastAPI):
         await db.connect()
         logger.info("✓ Database connected")
         
-        # Initialize MLflow tracker
-        logger.info("Initializing MLflow tracking...")
-        mlflow_tracker = MLflowTracker(
-            tracking_uri=settings.MLFLOW_TRACKING_URI,
-            experiment_name=settings.MLFLOW_EXPERIMENT_NAME
-        )
-        logger.info("✓ MLflow tracker initialized")
-        
         # Initialize Emotion Detection Service
         logger.info("Initializing Emotion Detection Service...")
         emotion_service = get_emotion_service()
         emotion_service.initialize()
         logger.info("✓ Emotion Detection Service initialized")
         
+        # Initialize Sentiment Analysis Service
+        logger.info("Initializing Sentiment Analysis Service...")
+        sentiment_service = get_sentiment_service()
+        sentiment_service.initialize()
+        logger.info("✓ Sentiment Analysis Service initialized")
+          
         # TODO: Initialize Depression Detection Service
-        # TODO: Initialize Sentiment Analysis Service
-        
-        logger.info("\n" + "=" * 70)
+
         logger.info("API STARTED SUCCESSFULLY")
         logger.info(f"Documentation: http://{settings.API_HOST}:{settings.API_PORT}/docs")
-        logger.info("=" * 70 + "\n")
         
     except Exception as e:
         logger.error(f"Failed to start API: {str(e)}")
@@ -117,10 +107,7 @@ app.add_middleware(
 from middleware.rate_limiter import RateLimitMiddleware
 app.add_middleware(RateLimitMiddleware)
 
-# ===========================================
 # EXCEPTION HANDLERS
-# ===========================================
-
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
     """Handle HTTP exceptions"""
@@ -132,7 +119,6 @@ async def http_exception_handler(request: Request, exc: HTTPException):
             "path": str(request.url.path)
         }
     )
-
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -149,22 +135,15 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 
-# ===========================================
 # ROUTERS
-# ===========================================
-
-# Include routers
 app.include_router(emotion.router)
 # app.include_router(depression.router)
-# app.include_router(sentiment.router)
+app.include_router(sentiment.router)
 app.include_router(users.router)
 app.include_router(analytics.router)
 
 
-# ===========================================
 # ROOT ENDPOINTS
-# ===========================================
-
 @app.get("/", tags=["Root"])
 async def root():
     """Root endpoint"""
@@ -175,7 +154,7 @@ async def root():
         "services": {
             "emotion_detection": "active",
             "depression_detection": "planned",
-            "sentiment_analysis": "planned"
+            "sentiment_analysis": "active"
         },
         "endpoints": {
             "docs": "/docs",
@@ -197,26 +176,25 @@ async def health_check():
     try:
         # Check database
         db_status = db is not None
-        
-        # Check MLflow
-        mlflow_status = mlflow_tracker is not None
-        
+                
         # Check services
         emotion_service = get_emotion_service()
         emotion_status = emotion_service.initialized
+
+        sentiment_service = get_sentiment_service()
+        sentiment_status = sentiment_service.initialized
         
-        all_healthy = db_status and mlflow_status and emotion_status
+        all_healthy = db_status and emotion_status and sentiment_status
         
         return {
             "status": "healthy" if all_healthy else "degraded",
             "services": {
                 "emotion_detection": emotion_status,
                 "depression_detection": False,  # TODO
-                "sentiment_analysis": False  # TODO
+                "sentiment_analysis": sentiment_status
             },
             "dependencies": {
-                "database": db_status,
-                "mlflow": mlflow_status
+                "database": db_status
             },
             "timestamp": datetime.now()
         }
@@ -229,10 +207,7 @@ async def health_check():
         }
 
 
-# ===========================================
 # RUN APPLICATION
-# ===========================================
-
 if __name__ == "__main__":
     import uvicorn
     
@@ -240,6 +215,6 @@ if __name__ == "__main__":
         "main:app",
         host=settings.API_HOST,
         port=settings.API_PORT,
-        reload=False,  # Set to True for development
+        reload=True,
         log_level=settings.LOG_LEVEL.lower()
     )
