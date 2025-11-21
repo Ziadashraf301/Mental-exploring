@@ -16,7 +16,7 @@ services:
   airflow-init:
     build:       
       context: .
-      dockerfile: airflow/Dockerfile
+      dockerfile: airflow/docker/Dockerfile
     depends_on:
       - postgres_airflow
     environment:
@@ -54,7 +54,7 @@ services:
   airflow-webserver:
     build:       
       context: .
-      dockerfile: airflow/Dockerfile
+      dockerfile: airflow/docker/Dockerfile
     container_name: airflow-webserver
     restart: always
     depends_on:
@@ -88,6 +88,7 @@ services:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/data:/opt/airflow/data
       - ./Emotion_detection:/opt/airflow/Emotion_detection
+      - ./Sentiment_analysis:/opt/airflow/Sentiment_analysis
       - ./airflow/airflow_logs:/opt/airflow/logs
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
@@ -97,7 +98,7 @@ services:
   airflow-scheduler:
     build: 
       context: .
-      dockerfile: airflow/Dockerfile
+      dockerfile: airflow/docker/Dockerfile
     container_name: airflow-scheduler
     restart: always
     depends_on:
@@ -127,6 +128,7 @@ services:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/data:/opt/airflow/data
       - ./Emotion_detection:/opt/airflow/Emotion_detection
+      - ./Sentiment_analysis:/opt/airflow/Sentiment_analysis
       - ./airflow/airflow_logs:/opt/airflow/logs
       - /var/run/docker.sock:/var/run/docker.sock
     networks:

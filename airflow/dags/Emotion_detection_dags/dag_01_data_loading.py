@@ -1,12 +1,12 @@
 """
 DAG 1: Data Loading Pipeline
 Loads training and test images/labels
-Runs: Weekly Sunday 11 PM
+Runs: Weekly Sunday 10 PM
 """
 
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-from airflow.sensors.external_task import ExternalTaskSensor
+from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 from datetime import datetime, timedelta
 import pickle
 import os
@@ -35,9 +35,7 @@ def load_data_task():
         console_output=CONFIG.console_output
     )
     
-    LOGGER.info("=" * 70)
     LOGGER.info("DAG 1: DATA LOADING - STARTING")
-    LOGGER.info("=" * 70)
     
     # Load training data
     LOGGER.info("Loading training data...")
@@ -52,7 +50,7 @@ def load_data_task():
     LOGGER.info(f"✓ Test: {len(test_images)} images")
     
     # Save data for next DAG
-    data_path = '/opt/airflow/data/Emotion_detection/processed'
+    data_path = CONFIG.processed_data_path
     os.makedirs(data_path, exist_ok=True)
     
     with open(f'{data_path}/train_images.pkl', 'wb') as f:
@@ -65,16 +63,14 @@ def load_data_task():
         pickle.dump(test_labels, f)
     
     LOGGER.info(f"✓ Data saved to {data_path}")
-    LOGGER.info("=" * 70)
     LOGGER.info("DAG 1: DATA LOADING - COMPLETE")
-    LOGGER.info("=" * 70)
 
 
 with DAG(
     'emotion_detection_01_data_loading',
     default_args=default_args,
     description='Load training and test data',
-    schedule='0 23 * * 0',  # Sunday 11 PM
+    schedule='0 22 * * 0',
     start_date=datetime(2025, 1, 1),
     catchup=False,
     tags=['emotion_detection', 'data_loading'],
@@ -84,3 +80,10 @@ with DAG(
         task_id='load_data',
         python_callable=load_data_task,
     )
+
+    trigger_preprocessing = TriggerDagRunOperator(
+        task_id='trigger_preprocessing',
+        trigger_dag_id='emotion_detection_02_preprocessing',
+    )
+
+    load_data >> trigger_preprocessing

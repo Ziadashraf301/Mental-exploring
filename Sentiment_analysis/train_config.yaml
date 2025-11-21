@@ -1,0 +1,114 @@
+# ============================================================
+# SENTIMENT ANALYSIS PIPELINE CONFIGURATION
+# ============================================================
+# Change any parameter here and run the pipeline
+# All models will use these settings automatically
+
+# ============================================================
+# DATA PATHS
+# ============================================================
+data:
+  data_path: "Sentiment_analysis/data/raw/training.1600000.processed.noemoticon.csv"
+  processed_data_path: "Sentiment_analysis/data/processed"
+
+# ============================================================
+# MLFLOW SETTINGS
+# ============================================================
+mlflow:
+  experiment_name: "SentimentAnalysis_v2"
+  tracking_uri: "http://ec2-3-237-35-239.compute-1.amazonaws.com:5000/"
+
+# ============================================================
+# OUTPUT DIRECTORIES
+# ============================================================
+output:
+  models_dir: "Sentiment_analysis/models"
+  plots_dir: "Sentiment_analysis/plots"
+
+# ============================================================
+# LOGGING SETTINGS
+# ============================================================
+logging:
+  level: "INFO"
+  log_file: "Sentiment_analysis/logs/Sentiment_Analysis_Train.log"
+  console_output: true
+
+# ============================================================
+# TEXT PREPROCESSING
+# ============================================================
+preprocessing:
+  tf_idf:
+    max_features: 50000
+    ngram_range: [1, 2]
+    stop_words: "english"
+    min_df: 2
+
+# ============================================================
+# MULTINOMIAL NAIVE BAYES PARAMETERS
+# ============================================================
+multinomial_nb:
+  enabled: true
+  fit_prior: false        
+  alpha: 1.0              
+  force_alpha: true      
+
+# ============================================================
+# LINEAR SVC PARAMETERS
+# ============================================================
+linear_svc:
+  enabled: true
+  fit_intercept: false     
+  C: 1.0                   
+  loss: "squared_hinge"    
+  tol: 0.0001
+  max_iter: 1000
+  dual: true        
+  random_state: 42
+
+# ============================================================
+# LOGISTIC REGRESSION PARAMETERS
+# ============================================================
+logistic_regression:
+  enabled: true
+  max_iter: 300           
+  penalty: "l2"
+  solver: "lbfgs"
+  C: 1.0
+  fit_intercept: false     
+  random_state: 42
+  n_jobs: -1
+
+# ============================================================
+# CROSS-VALIDATION SETTINGS
+# ============================================================
+cross_validation:
+  enabled: false          
+  k_folds: 5
+  shuffle: true
+  random_state: 42
+  n_jobs: -1
+  scoring: "accuracy"
+
+# ============================================================
+# RANDOM SEEDS (for reproducibility)
+# ============================================================
+random_seeds:
+  numpy_seed: 42
+  python_seed: 42
+
+# ============================================================
+# DATA SPLITTING
+# ============================================================
+data_loader:
+  test_size: 0.2
+  dataset_columns: ["sentiment", "ids", "date", "flag", "user", "text"]
+  dataset_encoding: "ISO-8859-1"
+  engine: "pyarrow"
+  sentiment_col: 'sentiment'
+  text_col: 'text'
+
+# ============================================================
+# MODEL SAVING
+# ============================================================
+model_saving:
+  save_models: true

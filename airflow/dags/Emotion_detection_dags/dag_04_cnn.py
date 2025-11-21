@@ -1,18 +1,19 @@
 """
 DAG 4: CNN Model Training
 Trains CNN model with optional cross-validation
-Runs: Weekly Sunday 11 PM (after DAG 3)
+Runs: Weekly Sunday 10:45 PM (after DAG 2)
 """
 
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-from airflow.sensors.external_task import ExternalTaskSensor
 from datetime import datetime, timedelta
 import pickle
 import mlflow
 import mlflow.tensorflow
 import numpy as np
 import os
+from sklearn.model_selection import KFold
+from mlflow.models import infer_signature
 
 from Emotion_detection.src.logger.train_logger import setup_train_logger
 from Emotion_detection.src.config.train_config_loader import reload_train_config
@@ -39,9 +40,7 @@ def train_cnn_model_task():
         console_output=CONFIG.console_output
     )
     
-    LOGGER.info("=" * 70)
     LOGGER.info("DAG 4: CNN TRAINING - STARTING")
-    LOGGER.info("=" * 70)
     
     # Setup MLflow
     mlflow.set_tracking_uri(CONFIG.mlflow_tracking_uri)
@@ -49,7 +48,7 @@ def train_cnn_model_task():
     mlflow.enable_system_metrics_logging()
     
     # Load preprocessed data
-    data_path = '/opt/airflow/data/Emotion_detection/processed'
+    data_path = CONFIG.processed_data_path
     
     with open(f'{data_path}/X_train_tf.pkl', 'rb') as f:
         X_train_tf = pickle.load(f)
@@ -61,8 +60,6 @@ def train_cnn_model_task():
         y_test_tf = pickle.load(f)
     
     LOGGER.info("✓ Preprocessed data loaded")
-    
-    results = {}
     
     if CONFIG.cnn_enabled:
         with mlflow.start_run(run_name="cnn_model"):
@@ -88,9 +85,7 @@ def train_cnn_model_task():
             
             cnn_model = build_cnn()
             
-            if CONFIG.cv_enabled:
-                from sklearn.model_selection import KFold
-                
+            if CONFIG.cv_enabled:                
                 k = CONFIG.cv_params["k_folds"]
                 shuffle = CONFIG.cv_params["shuffle"]
                 random_state = CONFIG.cv_params["random_state"]
@@ -99,6 +94,16 @@ def train_cnn_model_task():
                 
                 fold_train_acc = []
                 fold_val_acc = []
+                fold_train_f1 = []
+                fold_val_f1 = []
+                fold_train_logloss = []
+                fold_val_logloss = []
+                fold_train_precision = []
+                fold_val_precision = []
+                fold_train_recall = []
+                fold_val_recall = []
+                fold_train_auc = []
+                fold_val_auc = []
                 
                 LOGGER.info(f"Running {k}-Fold Cross Validation...")
                 
@@ -119,47 +124,97 @@ def train_cnn_model_task():
                             epochs=CONFIG.cnn_epochs,
                             augmentation_params=CONFIG.augmentation_params
                         )
+
+                        if os.path.exists(f"{CONFIG.plots_dir}/cnn_cv/"):
+                            LOGGER.info(f"Plots directory for cnn_cv already exists.")
+                        else:
+                            os.makedirs(f"{CONFIG.plots_dir}/cnn_cv/")
                         
                         metrics_cnn = get_report(
                             model_fold,
                             X_train_fold, y_train_fold,
                             X_val_fold, y_val_fold,
                             model_type="tensorflow",
-                            save_path=f"{CONFIG.plots_dir}/cnn_fold{fold+1}_report.png"
+                            save_path=f"{CONFIG.plots_dir}/cnn_cv/cnn_fold{fold+1}"
                         )
                         
                         tr_acc = metrics_cnn["train"]["accuracy"]
                         va_acc = metrics_cnn["test"]["accuracy"]
+                        tr_f1 = metrics_cnn["train"]["f1"]
+                        va_f1 = metrics_cnn["test"]["f1"]
+                        tr_logloss = metrics_cnn["train"]["logloss"]
+                        va_logloss = metrics_cnn["test"]["logloss"]
+                        tr_precision = metrics_cnn["train"]["precision"]
+                        va_precision = metrics_cnn["test"]["precision"]
+                        tr_recall = metrics_cnn["train"]["recall"]
+                        va_recall = metrics_cnn["test"]["recall"]
+                        tr_auc = metrics_cnn["train"]["roc_auc"]
+                        va_auc = metrics_cnn["test"]["roc_auc"]
                         
                         fold_train_acc.append(tr_acc)
                         fold_val_acc.append(va_acc)
+                        fold_train_f1.append(tr_f1)
+                        fold_val_f1.append(va_f1)
+                        fold_train_logloss.append(tr_logloss)
+                        fold_val_logloss.append(va_logloss)
+                        fold_train_precision.append(tr_precision)
+                        fold_val_precision.append(va_precision)
+                        fold_train_recall.append(tr_recall)
+                        fold_val_recall.append(va_recall)
+                        fold_train_auc.append(tr_auc)
+                        fold_val_auc.append(va_auc)
                         
                         mlflow.log_metrics({
                             "train_accuracy": tr_acc,
-                            "val_accuracy": va_acc
+                            "val_accuracy": va_acc,
+                            "train_f1": tr_f1,
+                            "val_f1": va_f1,
+                            "train_logloss": tr_logloss,
+                            "val_logloss": va_logloss,
+                            "train_precision": tr_precision,
+                            "val_precision": va_precision,
+                            "train_recall": tr_recall,
+                            "val_recall": va_recall,
+                            "train_roc_auc": tr_auc,
+                            "val_roc_auc": va_auc,
                         })
-                        
-                        plot_path = f"{CONFIG.plots_dir}/cnn_fold{fold+1}_report.png"
-                        if os.path.exists(plot_path):
-                            mlflow.log_artifact(plot_path)
+                                    
+                        # Save Artifacts - Plots
+                        plot_dir = CONFIG.plots_dir + "/cnn_cv/"
+                        for plot_file in os.listdir(plot_dir):
+                            mlflow.log_artifact(os.path.join(plot_dir, plot_file))
                         
                         LOGGER.info(f"Fold {fold+1} completed — Train Acc: {tr_acc:.4f}, Val Acc: {va_acc:.4f}")
                 
                 avg_train = float(np.mean(fold_train_acc))
                 avg_val = float(np.mean(fold_val_acc))
+                avg_train_f1 = float(np.mean(fold_train_f1))
+                avg_val_f1 = float(np.mean(fold_val_f1))
+                avg_train_logloss = float(np.mean(fold_train_logloss))
+                avg_val_logloss = float(np.mean(fold_val_logloss))
+                avg_train_precision = float(np.mean(fold_train_precision))
+                avg_val_precision = float(np.mean(fold_val_precision))
+                avg_train_recall = float(np.mean(fold_train_recall))
+                avg_val_recall = float(np.mean(fold_val_recall))
+                avg_train_auc = float(np.mean(fold_train_auc))
+                avg_val_auc = float(np.mean(fold_val_auc))
                 
                 mlflow.log_metrics({
                     "avg_train_accuracy": avg_train,
-                    "avg_val_accuracy": avg_val
+                    "avg_val_accuracy": avg_val,
+                    "avg_train_f1": avg_train_f1,
+                    "avg_val_f1": avg_val_f1,
+                    "avg_train_logloss": avg_train_logloss,
+                    "avg_val_logloss": avg_val_logloss,
+                    "avg_train_precision": avg_train_precision,
+                    "avg_val_precision": avg_val_precision,
+                    "avg_train_recall": avg_train_recall,
+                    "avg_val_recall": avg_val_recall,
+                    "avg_train_roc_auc": avg_train_auc,
+                    "avg_val_roc_auc": avg_val_auc,
                 })
                 
-                LOGGER.info(f"🏁 K-Fold Complete — Avg Train Acc: {avg_train:.4f}, Avg Val Acc: {avg_val:.4f}")
-                
-                results["cnn_metrics"] = {
-                    "train": {"accuracy": avg_train},
-                    "test": {"accuracy": avg_val},
-                }
-            
+                LOGGER.info(f"🏁 K-Fold Complete — Avg Train Acc: {avg_train:.4f}, Avg Val Acc: {avg_val:.4f}")       
             else:
                 LOGGER.info("Training CNN WITHOUT Cross Validation...")
                 
@@ -174,12 +229,17 @@ def train_cnn_model_task():
                     augmentation_params=CONFIG.augmentation_params
                 )
                 
+                if os.path.exists(f"{CONFIG.plots_dir}/cnn/"):
+                    LOGGER.info(f"Plots directory for cnn already exists.")
+                else:
+                    os.makedirs(f"{CONFIG.plots_dir}/cnn/")
+
                 metrics_cnn = get_report(
                     cnn_model,
                     X_train_tf, y_train_tf,
                     X_test_tf, y_test_tf,
                     model_type="tensorflow",
-                    save_path=f"{CONFIG.plots_dir}/cnn_report_metrics.png"
+                    save_path=f"{CONFIG.plots_dir}/cnn/"
                 )
                 
                 mlflow.log_metrics({
@@ -188,23 +248,28 @@ def train_cnn_model_task():
                     "train_precision": metrics_cnn["train"]["precision"],
                     "train_recall": metrics_cnn["train"]["recall"],
                     "train_logloss": metrics_cnn["train"]["logloss"],
+                    "train_roc_auc": metrics_cnn["train"]["roc_auc"],
                     "test_accuracy": metrics_cnn["test"]["accuracy"],
                     "test_f1": metrics_cnn["test"]["f1"],
                     "test_precision": metrics_cnn["test"]["precision"],
                     "test_recall": metrics_cnn["test"]["recall"],
                     "test_logloss": metrics_cnn["test"]["logloss"],
+                    "test_roc_auc": metrics_cnn["test"]["roc_auc"],
                 })
                 
-                if os.path.exists(f"{CONFIG.plots_dir}/cnn_report_metrics.png"):
-                    mlflow.log_artifact(f"{CONFIG.plots_dir}/cnn_report_metrics.png")
+                # Save Artifacts - Plots
+                plot_dir = CONFIG.plots_dir + "/cnn/"
+                for plot_file in os.listdir(plot_dir):
+                    mlflow.log_artifact(os.path.join(plot_dir, plot_file))
                 
+                # Save Model
                 if CONFIG.model_saving_params['save_cnn_model']:
                     save_format = CONFIG.model_saving_params['save_format']
                     model_path = f"{CONFIG.models_dir}/CNN_EMOTION_DETECTION.{save_format}"
                     
                     os.makedirs(CONFIG.models_dir, exist_ok=True)
-                    
                     cnn_model.save(model_path)
+
                     LOGGER.info(f"✓ Model saved locally to {model_path}")
                 
                 if CONFIG.model_saving_params['save_cnn_model']:
@@ -214,43 +279,27 @@ def train_cnn_model_task():
                         cnn_model,
                         "CNN_EmotionDetection",
                         registered_model_name="CNN_EmotionDetection",
-                        input_example=input_example
+                        input_example=input_example,
+                        signature=infer_signature(input_example, cnn_model.predict(input_example)),
                     )
                     LOGGER.info(f"✓ Model registered: {model_info.model_uri}")
                 
-                results['cnn_metrics'] = metrics_cnn
-                LOGGER.info("✓ CNN training complete")
-    
-    # Save results
-    with open(f'{data_path}/cnn_results.pkl', 'wb') as f:
-        pickle.dump(results, f)
-    
-    LOGGER.info("=" * 70)
     LOGGER.info("DAG 4: CNN TRAINING - COMPLETE")
-    LOGGER.info("=" * 70)
 
 
 with DAG(
     'emotion_detection_04_train_cnn',
     default_args=default_args,
     description='Train CNN model',
-    schedule='0 23 * * 0',  # Sunday 11 PM
+    schedule='45 22 * * 0',  # Sunday 10:45 PM
     start_date=datetime(2025, 1, 1),
     catchup=False,
     tags=['emotion_detection', 'cnn_training'],
 ) as dag:
-    
-    wait_for_sklearn = ExternalTaskSensor(
-        task_id='wait_for_sklearn',
-        external_dag_id='emotion_detection_03_train_sklearn',
-        external_task_id='train_sklearn_models',
-        timeout=3600,
-        mode='reschedule',
-    )
-    
+  
     train_cnn_model = PythonOperator(
         task_id='train_cnn_model',
         python_callable=train_cnn_model_task,
     )
     
-    wait_for_sklearn >> train_cnn_model
+    train_cnn_model

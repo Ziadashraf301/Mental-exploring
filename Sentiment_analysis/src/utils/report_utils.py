@@ -1,10 +1,7 @@
 from sklearn.metrics import classification_report
 
-def print_report(model_type, train_m, test_m, y_test, y_pred_test):
-    """Printable evaluation output for both model types with the same 5 metrics."""
-    
-    print(f"{model_type.upper()} MODEL RESULTS")
-
+def print_report(train_m, test_m, y_test, y_pred_test):
+    """Printable evaluation output for the model with the six metrics."""
     # Accuracy
     print(f"Train Accuracy : {train_m['accuracy']*100:.2f}%")
     print(f"Test Accuracy  : {test_m['accuracy']*100:.2f}%")
@@ -25,13 +22,14 @@ def print_report(model_type, train_m, test_m, y_test, y_pred_test):
     print(f"Train Log Loss : {train_m['logloss']:.4f}")
     print(f"Test Log Loss  : {test_m['logloss']:.4f}")
 
-        # Auc-ROC
+    # Auc-ROC
     print(f"Train ROC-AUC  : {train_m['roc_auc']*100:.2f}%")
     print(f"Test ROC-AUC   : {test_m['roc_auc']*100:.2f}%")
 
+    # Classification Report
     print("Classification Report:")
     print(classification_report(
         y_test, 
         y_pred_test, 
-        target_names=['Sad', 'Happy'])
+        target_names=['Negative', 'Positive'])
     )

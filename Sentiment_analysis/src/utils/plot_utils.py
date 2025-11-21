@@ -57,7 +57,7 @@ def plot_metrics(train_m, test_m, save_path=None):
     plt.close()
 
 
-def plot_confusion_matrix(y_true, y_pred, classes=('Sad', 'Happy'),
+def plot_confusion_matrix(y_true, y_pred, classes=('Negative', 'Positive'),
                           normalize=False, title='Confusion Matrix',
                           cmap='Blues', save_path=None):
     """

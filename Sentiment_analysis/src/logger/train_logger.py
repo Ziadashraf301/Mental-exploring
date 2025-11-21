@@ -5,7 +5,7 @@ Simple logger for train pipeline
 import logging
 from pathlib import Path
 
-def setup_train_logger(log_file="logs/Emotion_detection_Train.log", 
+def setup_train_logger(log_file="logs/Sentiment_Analysis_Train.log", 
                        log_level="INFO", 
                        console_output=True):
     """

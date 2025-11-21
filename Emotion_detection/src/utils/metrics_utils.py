@@ -1,6 +1,6 @@
 import numpy as np
 from sklearn.metrics import (
-    accuracy_score, f1_score, precision_score, recall_score, log_loss
+    accuracy_score, f1_score, precision_score, recall_score, log_loss, roc_auc_score
 )
 
 def get_predictions(model, x, model_type):
@@ -22,10 +22,11 @@ def get_predictions(model, x, model_type):
 
 def compute_metrics(y_true, y_pred, y_prob):
     """Compute accuracy, F1 (macro), precision, recall, and log loss."""
-    return {
+    return  {
         "accuracy": accuracy_score(y_true, y_pred),
-        "f1": f1_score(y_true, y_pred, average="macro"),
-        "precision": precision_score(y_true, y_pred, average="macro"),
-        "recall": recall_score(y_true, y_pred, average="macro"),
-        "logloss": log_loss(y_true, y_prob)
+        "f1": f1_score(y_true, y_pred),
+        "precision": precision_score(y_true, y_pred),
+        "recall": recall_score(y_true, y_pred),
+        "logloss": log_loss(y_true, y_prob),
+        "roc_auc": roc_auc_score(y_true, y_prob),
     }

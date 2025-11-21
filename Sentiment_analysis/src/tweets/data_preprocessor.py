@@ -1,11 +1,15 @@
+from Sentiment_analysis.src.logger.train_logger import get_logger
 import re
 import nltk
-# nltk.download('punkt_tab')
-# nltk.download('wordnet')
+
+nltk.download('punkt_tab')
+nltk.download('wordnet')
 
 from nltk.stem import WordNetLemmatizer
 import warnings
 warnings.filterwarnings('ignore')
+
+LOGGER = get_logger()
 
 # Defining dictionary containing all emojis with their meanings.
 emojis = {':)': 'smile', ':-)': 'smile', ';d': 'wink', ':-E': 'vampire', ':(': 'sad', 
@@ -16,27 +20,8 @@ emojis = {':)': 'smile', ':-)': 'smile', ';d': 'wink', ':-E': 'vampire', ':(': '
           '<(-_-)>': 'robot', 'd[-_-]b': 'dj', ":'-)": 'sadsmile', ';)': 'wink', 
           ';-)': 'wink', 'O:-)': 'angel','O*-)': 'angel','(:-D': 'gossip', '=^.^=': 'cat'}
 
-## Defining set containing all stopwords in english.
-stopwordlist = ['a', 'about', 'above', 'after', 'again', 'ain', 'all', 'am', 'an',
-             'and','any','are', 'as', 'at', 'be', 'because', 'been', 'before',
-             'being', 'below', 'between','both', 'by', 'can', 'd', 'did', 'do',
-             'does', 'doing', 'down', 'during', 'each','few', 'for', 'from', 
-             'further', 'had', 'has', 'have', 'having', 'he', 'her', 'here',
-             'hers', 'herself', 'him', 'himself', 'his', 'how', 'i', 'if', 'in',
-             'into','is', 'it', 'its', 'itself', 'just', 'll', 'm', 'ma',
-             'me', 'more', 'most','my', 'myself', 'now', 'o', 'of', 'on', 'once',
-             'only', 'or', 'other', 'our', 'ours','ourselves', 'out', 'own', 're',
-             's', 'same', 'she', "shes", 'should', "shouldve",'so', 'some', 'such',
-             't', 'than', 'that', "thatll", 'the', 'their', 'theirs', 'them',
-             'themselves', 'then', 'there', 'these', 'they', 'this', 'those', 
-             'through', 'to', 'too','under', 'until', 'up', 've', 'very', 'was',
-             'we', 'were', 'what', 'when', 'where','which','while', 'who', 'whom',
-             'why', 'will', 'with', 'won', 'y', 'you', "youd","youll", "youre",
-             "youve", 'your', 'yours', 'yourself', 'yourselves']
-
 def preprocess_text(text):
-    
-    # Create Lemmatizer and Stemmer.
+    # Create Lemmatizer
     wordLemm = WordNetLemmatizer()
     
     # Defining regex patterns.
@@ -66,11 +51,9 @@ def preprocess_text(text):
 
     tweetword = ''
     for word in tweet.split():
-        # Checking if the word is a stopword.
-        # if word not in stopwordlist:
-            if len(word)>1:
-                # Lemmatizing the word.
-                word = wordLemm.lemmatize(word)
-                tweetword += (word+' ')
+        if len(word)>1:
+        # Lemmatizing the word.
+            word = wordLemm.lemmatize(word)
+            tweetword += (word+' ')
         
     return tweetword

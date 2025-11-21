@@ -8,3 +8,4 @@ run.txt
 airflow_logs
 postgres_airflow
 postgres_mlflow
+tfidf_vocabulary.json

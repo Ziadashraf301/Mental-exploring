@@ -1,6 +1,6 @@
 """
 Configuration loader for the Emotion Detection Pipeline
-Loads settings from config.yaml file
+Loads settings from train_config file
 """
 
 import yaml
@@ -70,6 +70,10 @@ class Config:
     @property
     def test_labels_path(self) -> str:
         return self.config['data']['test_labels_path']
+    
+    @property
+    def processed_data_path(self) -> str:
+        return self.config['data']['processed_data_path']
     
     # ==================== MLFLOW SETTINGS ====================
     @property

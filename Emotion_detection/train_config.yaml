@@ -8,31 +8,32 @@
 # DATA PATHS
 # ============================================================
 data:
-  train_images_path: "data/Emotion_detection/raw/train/"
-  train_labels_path: "data/Emotion_detection/raw/labels/train_dataset_labels.csv"
-  test_images_path: "data/Emotion_detection/raw/test/"
-  test_labels_path: "data/Emotion_detection/raw/labels/test_dataset_labels.csv"
+  train_images_path: "Emotion_detection/data/raw/train/"
+  train_labels_path: "Emotion_detection/data/raw/labels/train_dataset_labels.csv"
+  test_images_path: "Emotion_detection/data/raw/test/"
+  test_labels_path: "Emotion_detection/data/raw/labels/test_dataset_labels.csv"
+  processed_data_path: "Emotion_detection/data/processed"
 
 # ============================================================
 # MLFLOW SETTINGS
 # ============================================================
 mlflow:
   experiment_name: "EmotionDetection"
-  tracking_uri: "http://ec2-98-93-3-121.compute-1.amazonaws.com:5000/"
+  tracking_uri: "http://ec2-3-237-35-239.compute-1.amazonaws.com:5000/"
 
 # ============================================================
 # OUTPUT DIRECTORIES
 # ============================================================
 output:
-  models_dir: "models"
-  plots_dir: "plots"
+  models_dir: "Emotion_detection/models"
+  plots_dir: "Emotion_detection/plots"
 
 # ============================================================
 # LOGGING SETTINGS
 # ============================================================
 logging:
-  level: "INFO"                # DEBUG, INFO, WARNING, ERROR
-  log_file: "logs/train.log"
+  level: "INFO"
+  log_file: "Emotion_detection/logs/Emotion_detection_Train.log"
   console_output: true
 
 # ============================================================

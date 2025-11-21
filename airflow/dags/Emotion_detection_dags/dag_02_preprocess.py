@@ -1,12 +1,12 @@
 """
 DAG 2: Data Preprocessing Pipeline
 Prepares data for sklearn and tensorflow models
-Runs: Weekly Sunday 11 PM (after DAG 1)
+Runs: Weekly Sunday 10:15 PM (after DAG 1)
 """
 
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-from airflow.sensors.external_task import ExternalTaskSensor
+from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 from datetime import datetime, timedelta
 import pickle
 import os
@@ -37,16 +37,14 @@ def preprocess_data_task():
         console_output=CONFIG.console_output
     )
     
-    LOGGER.info("=" * 70)
     LOGGER.info("DAG 2: DATA PREPROCESSING - STARTING")
-    LOGGER.info("=" * 70)
     
     # Set random seeds
     set_random_seeds(CONFIG)
     configure_gpu(CONFIG)
     
     # Load data from DAG 1
-    data_path = '/opt/airflow/data/Emotion_detection/processed'
+    data_path = CONFIG.processed_data_path
     
     with open(f'{data_path}/train_images.pkl', 'rb') as f:
         train_images = pickle.load(f)
@@ -91,32 +89,32 @@ def preprocess_data_task():
         pickle.dump(y_test_tf, f)
     
     LOGGER.info(f"✓ Preprocessed data saved to {data_path}")
-    LOGGER.info("=" * 70)
     LOGGER.info("DAG 2: DATA PREPROCESSING - COMPLETE")
-    LOGGER.info("=" * 70)
 
 
 with DAG(
     'emotion_detection_02_preprocessing',
     default_args=default_args,
     description='Preprocess data for training',
-    schedule='0 23 * * 0',  # Sunday 11 PM
+    schedule='15 22 * * 0',
     start_date=datetime(2025, 1, 1),
     catchup=False,
     tags=['emotion_detection', 'preprocessing'],
 ) as dag:
-    
-    wait_for_data_loading = ExternalTaskSensor(
-        task_id='wait_for_data_loading',
-        external_dag_id='emotion_detection_01_data_loading',
-        external_task_id='load_data',
-        timeout=3600,
-        mode='reschedule',
-    )
     
     preprocess_data = PythonOperator(
         task_id='preprocess_data',
         python_callable=preprocess_data_task,
     )
     
-    wait_for_data_loading >> preprocess_data
+    trigger_train_sklearn_models = TriggerDagRunOperator(
+        task_id='trigger_train_sklearn_models',
+        trigger_dag_id='emotion_detection_03_train_sklearn',
+    )
+
+    trigger_train_cnn_model = TriggerDagRunOperator(
+        task_id='trigger_train_cnn_model',
+        trigger_dag_id='emotion_detection_04_train_cnn',
+    )
+
+    preprocess_data >> [ trigger_train_sklearn_models,trigger_train_cnn_model]

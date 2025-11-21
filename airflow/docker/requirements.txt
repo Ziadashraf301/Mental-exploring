@@ -2,6 +2,9 @@
 numpy>=2.0.0,<2.3.0
 scikit-learn==1.6.1
 matplotlib==3.9.2
+seaborn==0.13.2
+tqdm==4.66.1
+nltk==3.8.1
 
 # OpenCV
 opencv-python>=4.12
