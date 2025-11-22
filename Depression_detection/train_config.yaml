@@ -1,0 +1,144 @@
+# ============================================================
+# DEPRESSION DETECTION PIPELINE CONFIGURATION
+# ============================================================
+# Change any parameter here and run the pipeline
+# All models will use these settings automatically
+
+# ============================================================
+# DATA PATHS
+# ============================================================
+data:
+  raw_data_path: "Depression_detection/data/raw/"
+  processed_data_path: "Depression_detection/data/processed"
+
+# ============================================================
+# MLFLOW SETTINGS
+# ============================================================
+mlflow:
+  experiment_name: "DepressionDetection"
+  tracking_uri: "http://ec2-3-237-35-239.compute-1.amazonaws.com:5000/"
+
+# ============================================================
+# OUTPUT DIRECTORIES
+# ============================================================
+output:
+  models_dir: "Depression_detection/models"
+  plots_dir: "Depression_detection/plots"
+
+# ============================================================
+# LOGGING SETTINGS
+# ============================================================
+logging:
+  level: "INFO"
+  log_file: "Depression_detection/logs/Depression_Detection_Train.log"
+  console_output: true
+
+
+# ============================================================
+# PIPELINE SETTINGS
+# ============================================================
+pipelines:
+  classical_ml:
+    enabled: true
+
+    vectorizer:
+      max_features: 30000
+      ngram_range: [1, 1]
+      lowercase: true
+      stop_words: "english"
+
+    tfidf:
+      use_idf: true
+      smooth_idf: true
+
+    models:
+
+      multinomial_nb:
+        enabled: true
+        type: MultinomialNB
+        params:
+          alpha: 0.1
+          fit_prior: false
+
+      sgd_classifier:
+        enabled: true
+        type: SGDClassifier
+        params:
+          loss: "modified_huber"
+          penalty: "l2"
+          alpha: 0.0001
+          max_iter: 60
+          tol: null
+          learning_rate: "adaptive"
+          eta0: 0.01
+          fit_intercept: false
+          random_state: 42
+
+  bert_pipeline:
+    enabled: true
+
+    model:
+      name: "roberta-base"
+      num_labels: 2
+      max_length_quantile: 0.99
+      use_lora: true
+
+    lora:
+      r: 16
+      lora_alpha: 32
+      lora_dropout: 0.1
+      target_modules: ["query", "value"]
+      bias: "none"
+
+    training:
+      epochs: 10
+      batch_size: 128
+      warmup_steps: 500
+      weight_decay: 0.01
+      eval_steps: 500
+      save_steps: 500
+      logging_steps: 100
+      fp16: true
+      metric_for_best_model: "f1"
+      report_to: "wandb"
+      save_total_limit: 2
+      early_stopping_patience: 3
+
+# ============================================================
+# CROSS-VALIDATION SETTINGS
+# ============================================================
+cross_validation:
+  enabled: false          
+  k_folds: 5
+  shuffle: true
+  random_state: 42
+  n_jobs: -1
+  scoring: "accuracy"
+
+# ============================================================
+# RANDOM SEEDS (for reproducibility)
+# ============================================================
+random_seeds:
+  numpy_seed: 42
+  python_seed: 42
+
+# ============================================================
+# DATA SPLITTING
+# ============================================================
+data_loader:
+  target_column_names: ["label","class", "is_depression", "label (depression result)"]
+  text_column_names: ["post_text", "filtered_tweet", "text", "message to examine", "clean_text"]
+  labels_map:
+    depression: 1
+    no_depression: 0
+    1: 1
+    0: 0
+    suicide: 1
+    non-suicide: 0
+  test_size: 0.2
+
+# ============================================================
+# MODEL SAVING
+# ============================================================
+model_saving:
+  save_models: true

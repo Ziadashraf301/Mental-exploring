@@ -89,6 +89,7 @@ services:
       - ./airflow/data:/opt/airflow/data
       - ./Emotion_detection:/opt/airflow/Emotion_detection
       - ./Sentiment_analysis:/opt/airflow/Sentiment_analysis
+      - ./Depression_detection:/opt/airflow/Depression_detection
       - ./airflow/airflow_logs:/opt/airflow/logs
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
@@ -129,6 +130,7 @@ services:
       - ./airflow/data:/opt/airflow/data
       - ./Emotion_detection:/opt/airflow/Emotion_detection
       - ./Sentiment_analysis:/opt/airflow/Sentiment_analysis
+      - ./Depression_detection:/opt/airflow/Depression_detection
       - ./airflow/airflow_logs:/opt/airflow/logs
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
