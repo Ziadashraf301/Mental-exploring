@@ -46,6 +46,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y jq unzip
 
+      - name: Write .env file
+        run: |
+          echo "${{ secrets.ENV_FILE }}" > api/.env
+          ls -la api/.env
+
       - name: Build Docker image
         run: |
           docker build -t mental-exploring-api:latest -f api/docker/Dockerfile api/
@@ -80,32 +85,40 @@ jobs:
           docker rm mental-api-test
 
   push-ecr:
-    name: Build & Push ECR Image
-    needs: build-and-test-docker
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
+      name: Build & Push ECR Image
+      needs: build-and-test-docker
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout Code
+          uses: actions/checkout@v3
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+        - name: Write .env file
+          run: |
+            echo "${{ secrets.ENV_FILE }}" > api/.env
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+        - name: Build Docker image
+          run: |
+            docker build -t mental-exploring-api:latest -f api/docker/Dockerfile api/
 
-      - name: Tag and Push Docker Image
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
-          IMAGE_TAG: latest
-        run: |
-          docker tag mental-exploring-api:latest $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        - name: Configure AWS credentials
+          uses: aws-actions/configure-aws-credentials@v1
+          with:
+            aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws-region: ${{ secrets.AWS_REGION }}
+
+        - name: Login to Amazon ECR
+          id: login-ecr
+          uses: aws-actions/amazon-ecr-login@v1
+
+        - name: Tag and Push Docker Image
+          env:
+            ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+            ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
+            IMAGE_TAG: latest
+          run: |
+            docker tag mental-exploring-api:latest $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+            docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
   deploy:
     name: Deploy to Self-Hosted
@@ -134,14 +147,22 @@ jobs:
         run: |
           docker ps -q --filter "name=mental-api" | grep -q . && docker stop mental-api && docker rm -fv mental-api || echo "No existing container"
 
+      - name: Write .env file for deployment
+        run: |
+          echo "${{ secrets.ENV_FILE }}" > .env
+
       - name: Run new container
         run: |
           docker run -d -p 8080:8080 \
             --name=mental-api \
+            --env-file .env \
             -e "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" \
             -e "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
             -e "AWS_REGION=${{ secrets.AWS_REGION }}" \
             ${{ secrets.AWS_ECR_LOGIN_URI }}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
+
+      - name: Clean up .env file
+        run: rm -f .env
 
       - name: Clean old images
         run: docker system prune -f
