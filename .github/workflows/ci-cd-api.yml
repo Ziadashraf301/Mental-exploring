@@ -54,18 +54,20 @@ jobs:
         run: |
           docker run -d --name mental-api-test -p 8080:8080 mental-exploring-api:latest
 
-      - name: Wait for API to be ready
+      - name: Wait for API to start with logs
         run: |
-          for i in {1..10}; do
+          for i in {1..20}; do
             if curl -s http://localhost:8080/docs > /dev/null; then
               echo "API is up!"
               exit 0
             else
-              echo "Waiting for API to start..."
-              sleep 5
+              echo "Waiting for API to start... (attempt $i)"
+              docker logs mental-api-test --tail 10
+              sleep 15
             fi
           done
           echo "API did not start in time."
+          docker logs mental-api-test
           exit 1
 
       - name: Run API tests
