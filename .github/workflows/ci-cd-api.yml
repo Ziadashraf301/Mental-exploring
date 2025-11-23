@@ -48,8 +48,24 @@ jobs:
 
       - name: Write .env file
         run: |
-          echo "${{ secrets.ENV_FILE }}" > api/.env
+          echo "${{ secrets.ENV_FILE }}" | base64 -d > api/.env
           ls -la api/.env
+          
+      - name: Debug .env file
+        run: |
+          echo "=== File size and encoding ==="
+          ls -lh api/.env
+          file api/.env
+          echo ""
+          echo "=== First 20 lines of .env ==="
+          head -20 api/.env
+          echo ""
+          echo "=== Checking problematic lines ==="
+          grep "ALLOWED_ORIGINS" api/.env
+          grep "EMOTION_IMAGE_SIZE" api/.env
+          echo ""
+          echo "=== Hex dump of ALLOWED_ORIGINS line ==="
+          grep "ALLOWED_ORIGINS" api/.env | xxd
 
       - name: Build Docker image
         run: |
