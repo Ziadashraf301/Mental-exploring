@@ -44,7 +44,7 @@ jobs:
       - name: Install Utilities
         run: |
           sudo apt-get update
-          sudo apt-get install -y jq unzip docker.io
+          sudo apt-get install -y jq unzip
 
       - name: Build Docker image
         run: |
