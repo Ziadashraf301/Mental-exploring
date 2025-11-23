@@ -19,7 +19,7 @@ data:
 # ============================================================
 mlflow:
   experiment_name: "EmotionDetection"
-  tracking_uri: "http://ec2-3-215-77-101.compute-1.amazonaws.com:5000/"
+  tracking_uri: "http://ec2-34-228-117-14.compute-1.amazonaws.com:5000/"
 
 # ============================================================
 # OUTPUT DIRECTORIES

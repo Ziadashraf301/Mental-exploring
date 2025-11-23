@@ -16,7 +16,7 @@ data:
 # ============================================================
 mlflow:
   experiment_name: "DepressionDetection"
-  tracking_uri: "http://ec2-3-237-35-239.compute-1.amazonaws.com:5000/"
+  tracking_uri: "http://ec2-34-228-117-14.compute-1.amazonaws.com:5000/"
 
 # ============================================================
 # OUTPUT DIRECTORIES

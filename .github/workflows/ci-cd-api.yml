@@ -1,0 +1,132 @@
+name: Mental Exploring API CI/CD
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'api/**'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  integration:
+    name: Continuous Integration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Install Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.12
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests pytest
+
+      - name: Run API Tests Locally
+        run: |
+          echo "Skipping tests for CI host (will test in container later)"
+
+  build-and-test-docker:
+    name: Build & Test Docker Image
+    needs: integration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Install Utilities
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq unzip docker.io
+
+      - name: Build Docker image
+        run: |
+          docker build -t mental-exploring-api:latest -f api/docker/Dockerfile api/
+
+      - name: Run container for testing
+        run: |
+          docker run -d --name mental-api-test -p 8000:8080 mental-exploring-api:latest
+          sleep 5  # wait for API to start
+
+      - name: Run API tests
+        run: |
+          python api/test/test_api.py
+
+      - name: Stop test container
+        run: |
+          docker stop mental-api-test
+          docker rm mental-api-test
+
+  push-ecr:
+    name: Build & Push ECR Image
+    needs: build-and-test-docker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Tag and Push Docker Image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
+          IMAGE_TAG: latest
+        run: |
+          docker tag mental-exploring-api:latest $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+  deploy:
+    name: Deploy to Self-Hosted
+    needs: push-ecr
+    runs-on: self-hosted
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Pull latest image
+        run: |
+          docker pull ${{ secrets.AWS_ECR_LOGIN_URI }}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
+
+      - name: Stop old container if exists
+        run: |
+          docker ps -q --filter "name=mental-api" | grep -q . && docker stop mental-api && docker rm -fv mental-api || echo "No existing container"
+
+      - name: Run new container
+        run: |
+          docker run -d -p 8080:8080 \
+            --name=mental-api \
+            -e "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" \
+            -e "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+            -e "AWS_REGION=${{ secrets.AWS_REGION }}" \
+            ${{ secrets.AWS_ECR_LOGIN_URI }}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
+
+      - name: Clean old images
+        run: docker system prune -f

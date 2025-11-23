@@ -10,6 +10,8 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 import logging
 from pathlib import Path
+import os
+os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 
 from config import settings
 from core.database import Database
