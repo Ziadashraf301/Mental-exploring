@@ -21,6 +21,9 @@ from services import get_emotion_service, get_sentiment_service
 from routers import emotion, sentiment, users, analytics
 # from api.routers import depression, sentiment
 
+# Create logs directory
+Path(settings.LOG_FILE).parent.mkdir(parents=True, exist_ok=True)
+
 # Setup logging
 logging.basicConfig(
     level=getattr(logging, settings.LOG_LEVEL),
@@ -31,9 +34,6 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
-
-# Create logs directory
-Path(settings.LOG_FILE).parent.mkdir(parents=True, exist_ok=True)
 
 # Global instances
 db = None
