@@ -5,7 +5,7 @@ Database models and operations
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship
 from sqlalchemy import (
-    Column, String, Float, Integer, DateTime, JSON, Text, ForeignKey, func
+    Column, String, Float, Integer, DateTime, JSON, Text, ForeignKey, func, text
 )
 from datetime import datetime, timedelta
 from typing import Dict, List
@@ -93,7 +93,7 @@ class Database:
         """Create database tables"""
         async with self.engine.begin() as conn:
             # Ensure schema exists
-            await conn.execute("CREATE SCHEMA IF NOT EXISTS mental_exploring_api;")
+            await conn.execute(text("CREATE SCHEMA IF NOT EXISTS mental_exploring_api;"))
             await conn.run_sync(Base.metadata.create_all)
     
     async def disconnect(self):
