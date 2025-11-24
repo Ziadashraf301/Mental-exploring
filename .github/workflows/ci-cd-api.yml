@@ -171,7 +171,7 @@ jobs:
 
       - name: Run new container
         run: |
-          docker run -d --name mental-api -p 8080:8080 mental-exploring-api:latest
+          docker run -d --name mental-api -p 8080:8080 ${{ secrets.AWS_ECR_LOGIN_URI }}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
 
       - name: Clean up .env file
         run: rm -f .env
