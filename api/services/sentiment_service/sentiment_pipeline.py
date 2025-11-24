@@ -77,7 +77,7 @@ class SentimentAnalysisPipeline:
             
             # Defining regex patterns.
             urlPattern        = r"((http://)[^ ]*|(https://)[^ ]*|( www\.)[^ ]*)"
-            userPattern       = '@[^\s]+'
+            userPattern       = r'@[^\s]+'
             alphaPattern      = "[^a-zA-Z0-9]"
             sequencePattern   = r"(.)\1\1+"
             seqReplacePattern = r"\1\1"

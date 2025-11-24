@@ -43,7 +43,7 @@ class Prediction(Base):
     __table_args__ = {"schema": "mental_exploring_api"}
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(String, ForeignKey("users.id"), index=True)
+    user_id = Column(String, ForeignKey("mental_exploring_api.users.id"), index=True)
     service_type = Column(String, index=True)  # "depression", "emotion", "sentiment"
     
     # Input data
