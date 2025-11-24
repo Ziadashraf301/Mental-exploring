@@ -23,6 +23,7 @@ Base = declarative_base()
 class User(Base):
     """User model"""
     __tablename__ = "users"
+    __table_args__ = {"schema": "mental_exploring_api"}
     
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     name = Column(String, nullable=False)
@@ -39,7 +40,8 @@ class User(Base):
 class Prediction(Base):
     """Prediction model - stores all predictions from all services"""
     __tablename__ = "predictions"
-    
+    __table_args__ = {"schema": "mental_exploring_api"}
+
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(String, ForeignKey("users.id"), index=True)
     service_type = Column(String, index=True)  # "depression", "emotion", "sentiment"
@@ -90,6 +92,8 @@ class Database:
     async def connect(self):
         """Create database tables"""
         async with self.engine.begin() as conn:
+            # Ensure schema exists
+            await conn.execute("CREATE SCHEMA IF NOT EXISTS mental_exploring_api;")
             await conn.run_sync(Base.metadata.create_all)
     
     async def disconnect(self):

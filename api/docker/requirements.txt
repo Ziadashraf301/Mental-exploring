@@ -37,4 +37,6 @@ email-validator>=2.0.0
 
 # MLflow
 mlflow==3.6.0
+boto3
+botocore
 
