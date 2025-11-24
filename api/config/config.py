@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     ALLOWED_ORIGINS: List[str] = ["*"]
     
     # Database
-    DATABASE_URL: str = "sqlite+aiosqlite:///./database/mental_health_api.db"
+    DATABASE_URL: str = "sqlite+aiosqlite:///./mental_health_api.db"
     # For PostgreSQL: "postgresql+asyncpg://user:password@localhost/dbname"
     
     # MLflow Settings

@@ -57,8 +57,8 @@ jobs:
           ls -lh api/.env
           file api/.env
           echo ""
-          echo "=== First 20 lines of .env ==="
-          head -20 api/.env
+          echo "=== First 10 lines of .env ==="
+          head -10 api/.env
           echo ""
           echo "=== Checking problematic lines ==="
           grep "ALLOWED_ORIGINS" api/.env
@@ -110,7 +110,8 @@ jobs:
 
         - name: Write .env file
           run: |
-            echo "${{ secrets.ENV_FILE }}" > api/.env
+            echo "${{ secrets.ENV_FILE }}" | base64 -d > api/.env
+            ls -la api/.env
 
         - name: Build Docker image
           run: |
@@ -163,19 +164,14 @@ jobs:
         run: |
           docker ps -q --filter "name=mental-api" | grep -q . && docker stop mental-api && docker rm -fv mental-api || echo "No existing container"
 
-      - name: Write .env file for deployment
+      - name: Write .env file
         run: |
-          echo "${{ secrets.ENV_FILE }}" > .env
+          echo "${{ secrets.ENV_FILE }}" | base64 -d > api/.env
+          ls -la api/.env
 
       - name: Run new container
         run: |
-          docker run -d -p 8080:8080 \
-            --name=mental-api \
-            --env-file .env \
-            -e "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" \
-            -e "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
-            -e "AWS_REGION=${{ secrets.AWS_REGION }}" \
-            ${{ secrets.AWS_ECR_LOGIN_URI }}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
+          docker run -d --name mental-api-test -p 8080:8080 mental-exploring-api:latest
 
       - name: Clean up .env file
         run: rm -f .env
