@@ -102,7 +102,7 @@ jobs:
 
   push-ecr:
       name: Build & Push ECR Image
-      needs: build-and-test-docker
+      needs: integration
       runs-on: ubuntu-latest
       steps:
         - name: Checkout Code
