@@ -16,7 +16,7 @@ data:
 # ============================================================
 mlflow:
   experiment_name: "SentimentAnalysis_v2"
-  tracking_uri: "http://ec2-34-228-117-14.compute-1.amazonaws.com:5000/"
+  tracking_uri: "http://ec2-35-175-112-11.compute-1.amazonaws.com:5000/"
 
 # ============================================================
 # OUTPUT DIRECTORIES
