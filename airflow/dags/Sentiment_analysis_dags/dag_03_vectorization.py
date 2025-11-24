@@ -1,7 +1,7 @@
 """
 DAG 3: TF-IDF Vectorization Pipeline
 Transforms preprocessed tweets using TF-IDF
-Runs weekly on Sunday at 11:10 PM (after DAG 2)
+Runs weekly on Sunday at 22:40 PM (after DAG 2)
 """
 
 from airflow import DAG

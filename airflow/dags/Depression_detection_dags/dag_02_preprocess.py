@@ -12,10 +12,11 @@ import time
 import pickle
 from tqdm import tqdm 
 
-from Sentiment_analysis.src.logger.train_logger import setup_train_logger
-from Sentiment_analysis.src.config.train_config_loader import reload_train_config
-from Sentiment_analysis.src.config.train_config_random_seed import set_random_seeds
-from Sentiment_analysis.src.tweets.data_preprocessor import preprocess_text
+from Depression_detection.src.logger.train_logger import setup_train_logger
+from Depression_detection.src.config.train_config_loader import reload_train_config
+from Depression_detection.src.config.train_config_random_seed import set_random_seeds
+from Depression_detection.src.text.data_preprocessor import clean_tweets
+
 
 default_args = {
     'owner': 'airflow',
@@ -26,10 +27,9 @@ default_args = {
     'retry_delay': timedelta(minutes=5),
 }
 
-
 def preprocess_data_task():
     """Preprocess data for models"""
-    CONFIG = reload_train_config("Sentiment_analysis/train_config.yaml")
+    CONFIG = reload_train_config("Depression_detection/train_config.yaml")
     LOGGER = setup_train_logger(
         log_file=CONFIG.log_file,
         log_level=CONFIG.log_level,
@@ -60,11 +60,11 @@ def preprocess_data_task():
     start = time.time()
 
     processed_train_text = []
-    for tweet in tqdm(train_tweets["text"]):
-        processed = preprocess_text(tweet)
+    for tweet in tqdm(train_tweets["filtered_tweet"]):
+        processed = clean_tweets(tweet)
         processed_train_text.append(processed)
 
-    y_train = list(train_tweets["sentiment"])
+    y_train = list(train_tweets["is_depression"])
 
     LOGGER.info(f"✓ Train preprocessing done in {round(time.time() - start, 2)} seconds")
 
@@ -73,10 +73,10 @@ def preprocess_data_task():
 
     processed_test_text = []
     for tweet in tqdm(test_tweets["text"]):
-        processed = preprocess_text(tweet)
+        processed = clean_tweets(tweet)
         processed_test_text.append(processed)
 
-    y_test = list(test_tweets["sentiment"])
+    y_test = list(test_tweets["is_depression"])
 
     LOGGER.info("✓ Test preprocessing complete")
 
@@ -102,13 +102,13 @@ def preprocess_data_task():
 
 
 with DAG(
-    'sentiment_analysis_02_preprocessing',
+    'depression_detection_02_preprocessing',
     default_args=default_args,
     description='Preprocess data for training',
     schedule='10 22 * * 0',
     start_date=datetime(2025, 1, 1),
     catchup=False,
-    tags=['sentiment_analysis', 'preprocessing'],
+    tags=['depression_detection', 'preprocessing'],
 ) as dag:
     
     
@@ -119,7 +119,7 @@ with DAG(
 
     trigger_vectorization = TriggerDagRunOperator(
         task_id='trigger_vectorization',
-        trigger_dag_id='sentiment_analysis_03_vectorization',
+        trigger_dag_id='depression_detection_03_vectorization',
     )
 
     preprocess_data >> trigger_vectorization

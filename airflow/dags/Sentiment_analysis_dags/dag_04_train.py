@@ -1,7 +1,7 @@
 """
 DAG 4: Model Training Pipeline
 Trains models on vectorized tweets
-Runs weekly on Sunday at 11:20 PM (after DAG 3)
+Runs weekly on Sunday at 11:00 PM (after DAG 3)
 """
 
 from airflow import DAG
