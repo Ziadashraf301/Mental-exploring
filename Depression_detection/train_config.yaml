@@ -16,7 +16,7 @@ data:
 # ============================================================
 mlflow:
   experiment_name: "DepressionDetection"
-  tracking_uri: "http://ec2-35-175-112-11.compute-1.amazonaws.com:5000/"
+  tracking_uri: "http://ec2-100-26-176-130.compute-1.amazonaws.com:5000/"
 
 # ============================================================
 # OUTPUT DIRECTORIES
@@ -41,38 +41,29 @@ pipelines:
   classical_ml:
     enabled: true
 
-    vectorizer:
+    tf_idf:
       max_features: 30000
       ngram_range: [1, 1]
-      lowercase: true
       stop_words: "english"
-
-    tfidf:
-      use_idf: true
-      smooth_idf: true
 
     models:
 
       multinomial_nb:
         enabled: true
-        type: MultinomialNB
-        params:
-          alpha: 0.1
-          fit_prior: false
+        alpha: 0.1
+        fit_prior: false
+        force_alpha: true
 
       sgd_classifier:
         enabled: true
-        type: SGDClassifier
-        params:
-          loss: "modified_huber"
-          penalty: "l2"
-          alpha: 0.0001
-          max_iter: 60
-          tol: null
-          learning_rate: "adaptive"
-          eta0: 0.01
-          fit_intercept: false
-          random_state: 42
+        loss: "modified_huber"
+        penalty: "l2"
+        alpha: 0.0001
+        max_iter: 60
+        tol: null
+        learning_rate: "adaptive"
+        eta0: 0.01
+        fit_intercept: false
 
   bert_pipeline:
     enabled: true

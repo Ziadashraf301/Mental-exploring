@@ -72,7 +72,7 @@ def preprocess_data_task():
     LOGGER.info("Preprocessing TEST tweets...")
 
     processed_test_text = []
-    for tweet in tqdm(test_tweets["text"]):
+    for tweet in tqdm(test_tweets["filtered_tweet"]):
         processed = clean_tweets(tweet)
         processed_test_text.append(processed)
 

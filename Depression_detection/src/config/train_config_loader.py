@@ -140,7 +140,7 @@ class Config:
     def get_model_params(self, model_name: str) -> Dict[str, Any]:
         """Return the hyperparameters for a model in classical_ml pipeline (SGD or MNB)."""
         classical_ml = self.get_pipeline('classical_ml').get('models', {})
-        return classical_ml.get(model_name.lower(), {}).get('params', {})
+        return classical_ml.get(model_name.lower(), {})
 
 
 # Singleton instance
