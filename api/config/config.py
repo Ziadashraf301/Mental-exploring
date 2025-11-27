@@ -31,6 +31,12 @@ class Settings(BaseSettings):
     # Depression Detection Model
     DEPRESSION_MODEL_NAME: str = "ziadashraf98765/roberta-depression-detection-lora-merged"
     DEPRESSION_MODEL_VERSION: str = "1.0"
+    DEPRESSION_MODEL_HUGGINGFACE_TOKEN: str = ""
+    DEPRESSION_MAX_LENGTH: int = 128
+    DEPRESSION_SAVE_RESULTS: bool = True
+    DEPRESSION_RESULTS_DIR: str = "results"
+    DEPRESSION_LOG_FILE: str = "logs/depression_detection_inference.log"
+    DEPRESSION_LOG_LEVEL: str = "INFO"
     
     # Sentiment Analysis Model
     SENTIMENT_MODEL_NAME: str = "Sentiment_analysisLogisticRegression_Model"

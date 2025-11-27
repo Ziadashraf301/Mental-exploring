@@ -4,12 +4,10 @@ SENTIMENT ANALYSIS API Router
 
 from fastapi import APIRouter, HTTPException, Depends
 from datetime import datetime
-import os
-import numpy as np
 import time
 import logging
 
-from core.schemas import EmotionResponse, SentimentRequest, SentimentResponse
+from core.schemas import SentimentRequest, SentimentResponse
 from core.database import Database
 from services import get_sentiment_service
 

@@ -1,6 +1,6 @@
 """
 Depression Detection Service
-Uses the DepressionDetectionPipeline class from Depression_detection project
+Uses the DepressionDetectionPipeline class with BERT from Hugging Face
 """
 
 import logging
@@ -11,8 +11,8 @@ logger = logging.getLogger(__name__)
 
 class DepressionDetectionService:
     """
-    Sentiment analysis service
-    Wraps the SentimentAnalysisPipeline class
+    Depression detection service using BERT
+    Wraps the DepressionDetectionPipeline class
     """
 
     def __init__(self):
@@ -24,54 +24,56 @@ class DepressionDetectionService:
     
     def initialize(self):
         """
-        Initialize the sentiment analysis pipeline
+        Initialize the depression detection pipeline
         """
         if self.initialized:
-            logger.info("Sentiment analysis service already initialized")
+            logger.info("Depression detection service already initialized")
             return
 
         try:
-            logger.info("Initializing sentiment analysis service...")
+            logger.info("Initializing depression detection service...")
             
-            # Initialize pipeline
+            # Initialize pipeline (loads BERT model from Hugging Face)
             self.pipeline.initialize_pipeline()
 
             # Store model info
             self.model_info = self.pipeline.get_model_info()
 
             self.initialized = True
-            logger.info("✓ Sentiment analysis service initialized successfully")
+            logger.info("✓ Depression detection service initialized successfully")
+            logger.info(f"✓ Model: {self.model_info['model_name']}")
+            logger.info(f"✓ Device: {self.model_info['device']}")
 
         except Exception as e:
-            logger.error(f"Failed to initialize sentiment analysis service: {str(e)}")
+            logger.error(f"Failed to initialize depression detection service: {str(e)}")
             raise
 
     def predict(self, text: str) -> dict:
         """
-        Predict sentiment in text
+        Predict depression indicators in text
     
         Parameters:
         -----------
         text : str
-            Text to analyze
+            Text to analyze for depression indicators
 
         Returns:
         --------
         dict
-            Prediction results
+            Prediction results with probabilities
         """
         if not self.initialized:
             raise RuntimeError("Service not initialized. Call initialize() first.")
 
         try:
-            result = self.pipeline.predict_sentiment(
+            result = self.pipeline.predict_depression(
                 text=text,
-                save_result=self.config.SENTIMENT_SAVE_RESULTS
+                save_result=self.config.DEPRESSION_SAVE_RESULTS
             )
             return result
 
         except Exception as e:
-            logger.error(f"Sentiment prediction failed: {str(e)}")
+            logger.error(f"Depression prediction failed: {str(e)}")
             raise
 
     def health_check(self) -> dict:
@@ -81,7 +83,7 @@ class DepressionDetectionService:
         Returns:
         --------
         dict
-            Health status
+            Health status including model and device info
         """
         if not self.initialized:
             return {
@@ -104,7 +106,7 @@ class DepressionDetectionService:
         Returns:
         --------
         dict
-            Model information
+            Model information including architecture and device
         """
         if not self.initialized:
             return {"error": "Service not initialized"}
@@ -113,19 +115,19 @@ class DepressionDetectionService:
 
 
 # Global singleton service instance
-_emotion_service = None
+_depression_service = None
 
 
-def get_sentiment_service() -> SentimentAnalysisService:
+def get_depression_service() -> DepressionDetectionService:
     """
-    Get sentiment analysis service instance (Singleton)
+    Get depression detection service instance (Singleton)
 
     Returns:
     --------
-    SentimentAnalysisService
+    DepressionDetectionService
         Service instance
     """
-    global _emotion_service
-    if _emotion_service is None:
-        _emotion_service = SentimentAnalysisService()
-    return _emotion_service
+    global _depression_service
+    if _depression_service is None:
+        _depression_service = DepressionDetectionService()
+    return _depression_service

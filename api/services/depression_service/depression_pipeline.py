@@ -1,9 +1,10 @@
 """
-Production Inference Pipeline for Depression Detection
-Simple, clean, and ready for FastAPI integration
+Production Inference Pipeline for Depression Detection using BERT
+Loads model from Hugging Face Hub
 """
 
-import mlflow.sklearn
+import torch
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import os
 import json
 from datetime import datetime
@@ -11,9 +12,12 @@ import logging
 from config import settings
 import re
 import nltk
+import string
+from  nltk.tokenize import word_tokenize
 
-nltk.download('punkt_tab')
-nltk.download('wordnet')
+nltk.download('punkt_tab', quiet=True)
+nltk.download('wordnet', quiet=True)
+nltk.download('stopwords', quiet=True)
 
 from nltk.stem import WordNetLemmatizer
 
@@ -34,86 +38,137 @@ class DepressionDetectionPipeline:
         )
         self.LOGGER = logging.getLogger(__name__)
 
-        # Initialize Depression model
+        # Initialize BERT model and tokenizer
         self.MODEL = None
-        self.VECTORIZER = None
+        self.TOKENIZER = None
+        self.DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     def initialize_pipeline(self):
         """
         Initialize the inference pipeline
-        Load config, setup logger, load model
+        Load BERT model and tokenizer from Hugging Face
         """
-        self.LOGGER.info("INITIALIZING SENTIMENT ANALYSIS INFERENCE PIPELINE")
+        self.LOGGER.info("INITIALIZING DEPRESSION DETECTION INFERENCE PIPELINE")
+        self.LOGGER.info(f"Using device: {self.DEVICE}")
 
-        mlflow.set_tracking_uri(self.CONFIG.MLFLOW_TRACKING_URI)
-        self.LOGGER.info(f"\n✓ MLflow Tracking URI set: {self.CONFIG.MLFLOW_TRACKING_URI}")
-
-        # Load model
-        model_uri = f"models:/{self.CONFIG.SENTIMENT_MODEL_NAME}/{self.CONFIG.SENTIMENT_MODEL_VERSION}"
-        self.LOGGER.info(f"✓ Loading model from: {model_uri}")
+        # Load tokenizer
+        self.LOGGER.info(f"Loading tokenizer from: {self.CONFIG.DEPRESSION_MODEL_NAME}")
         try:
-            self.MODEL = mlflow.sklearn.load_model(model_uri)
-            self.LOGGER.info(f"✓ Model loaded successfully: {self.CONFIG.SENTIMENT_MODEL_NAME}")
+            self.TOKENIZER = AutoTokenizer.from_pretrained(
+                self.CONFIG.DEPRESSION_MODEL_NAME,
+                use_auth_token=self.CONFIG.HUGGINGFACE_TOKEN if hasattr(self.CONFIG, 'HUGGINGFACE_TOKEN') else None
+            )
+            self.LOGGER.info(f"✓ Tokenizer loaded successfully")
         except Exception as e:
-            self.LOGGER.error(f"✗ Failed to load model: {str(e)}")
+            self.LOGGER.error(f"✗ Failed to load tokenizer: {str(e)}")
             raise
 
-        vactorizer_uri = f"models:/{self.CONFIG.SENTIMENT_VACTORIZER_MODEL}/{self.CONFIG.SENTIMENT_VACTORIZER_MODEL_VERSION}"
-        self.LOGGER.info(f"✓ Loading vectorizer from: {vactorizer_uri}")
+        # Load model
+        self.LOGGER.info(f"Loading model from: {self.CONFIG.DEPRESSION_MODEL_NAME}")
         try:
-            self.VECTORIZER = mlflow.sklearn.load_model(vactorizer_uri)
-            self.LOGGER.info(f"✓ Vectorizer loaded successfully: {self.CONFIG.SENTIMENT_VACTORIZER_MODEL}")
+            self.MODEL = AutoModelForSequenceClassification.from_pretrained(
+                self.CONFIG.DEPRESSION_MODEL_NAME,
+                use_auth_token=self.CONFIG.HUGGINGFACE_TOKEN if hasattr(self.CONFIG, 'HUGGINGFACE_TOKEN') else None
+            )
+            self.MODEL.to(self.DEVICE)
+            self.MODEL.eval()
+            self.LOGGER.info(f"✓ Model loaded successfully and set to eval mode")
         except Exception as e:
-            self.LOGGER.error(f"✗ Failed to load vectorizer: {str(e)}")
+            self.LOGGER.error(f"✗ Failed to load model: {str(e)}")
             raise
 
         self.LOGGER.info("PIPELINE INITIALIZATION COMPLETE")
 
     def preprocess_text(self, text):
-
+        """
+        Basic text preprocessing (optional for BERT - it can handle raw text well)
+        Keep minimal preprocessing to preserve context
+        """
         try:
             # Create Lemmatizer
-            wordLemm = WordNetLemmatizer()
+            lemmatizer = WordNetLemmatizer()
             
-            # Defining regex patterns.
-            urlPattern        = r"((http://)[^ ]*|(https://)[^ ]*|( www\.)[^ ]*)"
-            userPattern       = r'@[^\s]+'
-            alphaPattern      = "[^a-zA-Z0-9]"
-            sequencePattern   = r"(.)\1\1+"
-            seqReplacePattern = r"\1\1"
+            #HappyEmoticons
+            emoticons_happy = set([
+                ':-)', ':)', ';)', ':o)', ':]', ':3', ':c)', ':>', '=]', '8)', '=)', ':}',
+            ':^)', ':-D', ':D', '8-D', '8D', 'x-D', 'xD', 'X-D', 'XD', '=-D', '=D','=-3', '=3', ':-))',
+                ":'-)", ":')", ':*', ':^*', '>:P', ':-P', ':P', 'X-P','x-p', 'xp', 'XP', ':-p', ':p', '=p',
+                ':-b', ':b', '>:)', '>;)', '>:-)','<3'
+                ])
 
-            # Defining dictionary containing all emojis with their meanings.
-            emojis = {':)': 'smile', ':-)': 'smile', ';d': 'wink', ':-E': 'vampire', ':(': 'sad', 
-                ':-(': 'sad', ':-<': 'sad', ':P': 'raspberry', ':O': 'surprised',
-                ':-@': 'shocked', ':@': 'shocked',':-$': 'confused', ':\\': 'annoyed', 
-                ':#': 'mute', ':X': 'mute', ':^)': 'smile', ':-&': 'confused', '$_$': 'greedy',
-                '@@': 'eyeroll', ':-!': 'confused', ':-D': 'smile', ':-0': 'yell', 'O.o': 'confused',
-                '<(-_-)>': 'robot', 'd[-_-]b': 'dj', ":'-)": 'sadsmile', ';)': 'wink', 
-                ';-)': 'wink', 'O:-)': 'angel','O*-)': 'angel','(:-D': 'gossip', '=^.^=': 'cat'}
+            # Sad Emoticons
+            emoticons_sad = set([
+                ':L', ':-/', '>:/', ':S', '>:[', ':@', ':-(', ':[', ':-||', '=L', ':<',
+                ':-[', ':-<', '=\\', '=/', '>:(', ':(', '>.<', ":'-(", ":'(", ':\\', ':-c',
+                ':c', ':{', '>:\\', ';('
+                ])
 
-            text = text.lower()
-                
-            # Replace all URls with 'URL'
-            text = re.sub(urlPattern,'',text)
+            #Emoji patterns
+            emoji_pattern = re.compile("["
+                    u"\U0001F600-\U0001F64F"  
+                    u"\U0001F300-\U0001F5FF"
+                    u"\U0001F680-\U0001F6FF"
+                    u"\U0001F1E0-\U0001F1FF"
+                    u"\U00002702-\U000027B0"
+                    u"\U000024C2-\U0001F251"
+                    "]+", flags=re.UNICODE)
 
-            # Replace all emojis.
-            for emoji in emojis.keys():
-                text = text.replace(emoji,emojis[emoji])        
 
-            # Replace @USERNAME to 'USER'.
-            text = re.sub(userPattern,'', text)
+            # words difficult to detect by the preprocessing modules
+            difficult_to_detect = ["'re","'s","'m","'ve","n't","...","``","'","im",
+                "ca","itv","-","a.","dont","us","could","can","'d","__",'aaron', 'ab', 
+                'zurab', 'zwart', 'zyl',"ll","u",'__', '___', '____','a', 'about', 'above', 
+                'after', 'again', 'ain', 'all', 'am', 'an',
+                'and','any','are', 'as', 'at', 'be', 'because', 'been', 'before',
+                'being', 'below', 'between','both', 'by', 'can', 'd', 'did', 'do',
+                'does', 'doing', 'down', 'during', 'each','few', 'for', 'from', 
+                'further', 'had', 'has', 'have', 'having', 'he', 'her', 'here',
+                'hers', 'herself', 'him', 'himself', 'his', 'how', 'i', 'if', 'in',
+                'into','is', 'it', 'its', 'itself', 'just', 'll', 'm', 'ma',
+                'me', 'more', 'most','my', 'myself', 'now', 'o', 'of', 'on', 'once',
+                'only', 'or', 'other', 'our', 'ours','ourselves', 'out', 'own', 're',
+                's', 'same', 'she', "shes", 'should', "shouldve",'so', 'some', 'such',
+                't', 'than', 'that', "thatll", 'the', 'their', 'theirs', 'them',
+                'themselves', 'then', 'there', 'these', 'they', 'this', 'those', 
+                'through', 'to', 'too','under', 'until', 'up', 've', 'very', 'was',
+                'we', 'were', 'what', 'when', 'where','which','while', 'who', 'whom',
+                'why', 'will', 'with', 'won', 'y', 'you', "youd","youll", "youre",
+                "youve", 'your', 'yours', 'yourself', 'yourselves']
 
-            # Replace all non alphabets.
-            text = re.sub(alphaPattern, " ", text)
+            difficult_to_detect = set(difficult_to_detect)
 
-            # Replace 3 or more consecutive letters by 2 letter.
-            text = re.sub(sequencePattern, seqReplacePattern, text)
+            #combine sad and happy emoticons
+            emoticons = emoticons_happy.union(emoticons_sad)
 
-            sentence = ''
-            for word in text.split():
-                if len(word)>1:
-                    word = wordLemm.lemmatize(word)
-                    sentence += (word+' ')
+            text = text.lower() #lower the words to be in the same format for the modules
+
+            text = re.sub (r':', '', text) #after tweepy preprocessing the colon symbol left remain after
+
+            text = re.sub (r',ÄI', '', text) #removing mentions
+            
+            text = re.sub (r'[^\x00-\x7F]+','', text) #replace consecutive non-ASCII characters with a space
+            
+            text = emoji_pattern.sub (r'', text)  #remove emojis from tweet
+            
+            text = re.sub('[0-9]+', '', text) #remove numbers
+
+            text = re.sub(f'[{string.punctuation}]','',text) #remove punctuation 
+
+            stop_words = set(stopwords.words('english')) #get the stop words
+            
+            word_tokens = word_tokenize(text) #extract the tokens from string of characters
+            
+            preprocessed_text = [] 
+
+            #looping through conditions to filter the words
+            for w in word_tokens:
+                #check tokens against stop words, emoticons and words difficult to detect 
+                if w not in stop_words and w not in emoticons and w not in difficult_to_detect:
+                    if len(w)>1: #remove the word if it less than 2 character
+                        w = lemmatizer.lemmatize(w) # Applay lemmatization on the word 
+                        preprocessed_text.append(w) #Append the pure word to the list after cleaning
+
+            Text = ' '.join(preprocessed_text) #Reconstruct the tweet after cleaning
             
             self.LOGGER.info(f"✓ Text preprocessing complete")
         
@@ -121,89 +176,125 @@ class DepressionDetectionPipeline:
             self.LOGGER.error(f"✗ Text preprocessing failed: {str(e)}")
             raise
             
-        return sentence
+        return Text.strip()
 
-    def predict_sentiment(self, text, save_result=False):
+    def predict_depression(self, text, save_result=False):
+        """
+        Predict depression from text using BERT model
+        
+        Parameters:
+        -----------
+        text : str
+            Text to analyze
+        save_result : bool
+            Whether to save results to JSON
+            
+        Returns:
+        --------
+        dict
+            Prediction results including probabilities
+        """
         try:
             if not text:
-                self.LOGGER.warning("No text provided for sentiment analysis")
+                self.LOGGER.warning("No text provided for depression detection")
                 result = {
                     "success": True,
                     "timestamp": datetime.now().isoformat(),
-                    "results": [],
-                    "message": "No text provided for sentiment analysis"
+                    "message": "No text provided for depression detection"
                 }
                 return result
          
-            # preprocess text
-            text = self.preprocess_text(text)
+            # Preprocess text 
+            processed_text = self.preprocess_text(text)
 
-            # vactorize text
-            text_vactor = self.VECTORIZER.transform([text])
+            # Tokenize
+            max_length = self.CONFIG.DEPRESSION_MAX_LENGTH if hasattr(self.CONFIG, 'DEPRESSION_MAX_LENGTH') else 128
+            
+            encoding = self.TOKENIZER(
+                processed_text,
+                add_special_tokens=True,
+                max_length=max_length,
+                padding='max_length',
+                truncation=True,
+                return_attention_mask=True,
+                return_tensors='pt'
+            )
 
-            # make prediction
-            sentiment = self.MODEL.predict(text_vactor)[0]
-            propabilty = self.MODEL.predict_proba(text_vactor)
+            # Move to device
+            input_ids = encoding['input_ids'].to(self.DEVICE)
+            attention_mask = encoding['attention_mask'].to(self.DEVICE)
 
-            # get probabilities
-            probabilty_negative = propabilty[:,0][0]
-            probabilty_positive = propabilty[:,1][0]
+            # Predict
+            with torch.no_grad():
+                outputs = self.MODEL(input_ids=input_ids, attention_mask=attention_mask)
+                logits = outputs.logits
+                probs = torch.softmax(logits, dim=1)
+                pred_class = torch.argmax(probs, dim=1).item()
+                confidence = probs[0][pred_class].item()
+
+            # Get probabilities
+            probability_not_depressed = probs[0][0].item()
+            probability_depressed = probs[0][1].item()
 
             result = {
                 "success": True,
                 "timestamp": datetime.now().isoformat(),
-                "prediction": "Positive" if sentiment == 1 else "Negative",
-                "probability_negative": float(f"{probabilty_negative:.4f}"),
-                "probability_positive": float(f"{probabilty_positive:.4f}"),
-                "confidence": float(f"{max(probabilty_negative, probabilty_positive):.4f}"),
+                "prediction": "Depressed" if pred_class == 1 else "Not Depressed",
+                "prediction_label": pred_class,
+                "probability_not_depressed": float(f"{probability_not_depressed:.4f}"),
+                "probability_depressed": float(f"{probability_depressed:.4f}"),
+                "confidence": float(f"{confidence:.4f}"),
                 "model_info": {
-                    "name": self.CONFIG.SENTIMENT_MODEL_NAME,
-                    "version": self.CONFIG.SENTIMENT_MODEL_VERSION,
-                    "stage": self.CONFIG.SENTIMENT_MODEL_STAGE,
-                    "vectorizer_name": self.CONFIG.SENTIMENT_VACTORIZER_MODEL,
-                    "vectorizer_version": self.CONFIG.SENTIMENT_VACTORIZER_MODEL_VERSION
+                    "name": self.CONFIG.DEPRESSION_MODEL_NAME,
+                    "type": "BERT",
+                    "device": str(self.DEVICE),
+                    "max_length": max_length
                 }
             }
 
-            if save_result or self.CONFIG.SENTIMENT_SAVE_RESULTS:
+            if save_result or self.CONFIG.DEPRESSION_SAVE_RESULTS:
                 self.save_results_to_json(result)
 
-            self.LOGGER.info("✓ Sentiment prediction complete")
+            self.LOGGER.info(f"✓ Depression prediction complete: {result['prediction']}")
             return result
         
         except Exception as e:
-            self.LOGGER.error(f"✗ Error during sentiment prediction: {str(e)}", exc_info=True)
+            self.LOGGER.error(f"✗ Error during depression prediction: {str(e)}", exc_info=True)
             return {
                 "success": False,
                 "timestamp": datetime.now().isoformat(),
-                "results": [],
-                "message": "Error during processing"
-
+                "message": f"Error during processing: {str(e)}"
             }
 
     def save_results_to_json(self, result):
-        os.makedirs(self.CONFIG.SENTIMENT_RESULTS_DIR, exist_ok=True)
+        """Save prediction results to JSON file"""
+        os.makedirs(self.CONFIG.DEPRESSION_RESULTS_DIR, exist_ok=True)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"result_{timestamp}.json"
-        filepath = os.path.join(self.CONFIG.SENTIMENT_RESULTS_DIR, filename)
+        filename = f"depression_result_{timestamp}.json"
+        filepath = os.path.join(self.CONFIG.DEPRESSION_RESULTS_DIR, filename)
         with open(filepath, 'w') as f:
             json.dump(result, f, indent=2)
 
         self.LOGGER.info(f"Results saved to: {filepath}")
 
     def get_model_info(self):
+        """Get model information"""
         return {
             "model_loaded": self.MODEL is not None,
-            "model_name": self.CONFIG.SENTIMENT_MODEL_NAME,
-            "model_version": self.CONFIG.SENTIMENT_MODEL_VERSION,
-            "model_stage": self.CONFIG.SENTIMENT_MODEL_STAGE,
-            "tracking_uri": self.CONFIG.MLFLOW_TRACKING_URI
+            "tokenizer_loaded": self.TOKENIZER is not None,
+            "model_name": self.CONFIG.DEPRESSION_MODEL_NAME,
+            "model_type": "BERT (Hugging Face)",
+            "device": str(self.DEVICE),
+            "vocab_size": len(self.TOKENIZER.get_vocab()) if self.TOKENIZER else None
         }
 
     def health_check(self):
+        """Check pipeline health"""
         return {
-            "status": "healthy" if (self.MODEL is not None) else "unhealthy",
+            "status": "healthy" if (self.MODEL is not None and self.TOKENIZER is not None) else "unhealthy",
             "model_loaded": self.MODEL is not None,
+            "tokenizer_loaded": self.TOKENIZER is not None,
+            "device": str(self.DEVICE),
             "config_loaded": self.CONFIG is not None,
             "model_info": self.get_model_info() if self.CONFIG else None
         }

@@ -15,10 +15,10 @@ os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 
 from config import settings
 from core.database import Database
-from services import get_emotion_service, get_sentiment_service
+from services import get_emotion_service, get_sentiment_service, get_depression_service
 
 # Import routers
-from routers import emotion, sentiment, users, analytics
+from routers import depression, emotion, sentiment, users, analytics
 # from api.routers import depression, sentiment
 
 # Create logs directory
