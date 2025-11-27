@@ -160,9 +160,9 @@ jobs:
         run: |
           docker pull ${{ secrets.AWS_ECR_LOGIN_URI }}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
 
-      - name: Stop old container if exists
+      - name: Stop and remove old container if exists
         run: |
-          docker ps -q --filter "name=mental-api" | grep -q . && docker stop mental-api && docker rm -fv mental-api || echo "No existing container"
+          docker ps -a -q --filter "name=mental-api" | grep -q . && docker rm -f mental-api || echo "No existing container"
 
       - name: Write .env file
         run: |
