@@ -140,7 +140,7 @@ jobs:
   deploy:
     name: Deploy to Self-Hosted
     needs: push-ecr
-    runs-on: self-hosted
+    runs-on: [self-hosted, api-runner]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
