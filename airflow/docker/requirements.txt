@@ -12,5 +12,17 @@ opencv-python>=4.12
 # MLflow
 mlflow==3.6.0
 
+# PyTorch
+torch==2.2.1
+
+# PEFT (Parameter-Efficient Fine-Tuning)
+peft==0.4.0
+
+# Hugging Face Transformers (often used with PEFT)
+transformers==4.34.0
+
+# Additional utilities
+sentencepiece==0.1.99
+
 # TensorFlow
 tensorflow==2.20.0
