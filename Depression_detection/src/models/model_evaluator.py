@@ -1,7 +1,8 @@
-from Sentiment_analysis.src.logger.train_logger import get_logger
-from Sentiment_analysis.src.utils.metrics_utils import get_predictions, compute_metrics
-from Sentiment_analysis.src.utils.plot_utils import plot_confusion_matrix, plot_metrics, plot_roc_curve
-from Sentiment_analysis.src.utils.report_utils import print_report
+from Depression_detection.src.logger.train_logger import get_logger
+from Depression_detection.src.utils.metrics_utils import get_predictions, compute_metrics
+from Depression_detection.src.utils.plot_utils import plot_confusion_matrix, plot_metrics, plot_roc_curve
+from Depression_detection.src.utils.report_utils import print_report
+import torch
 
 LOGGER = get_logger()
 
@@ -53,4 +54,35 @@ def get_report(model, x_train, y_train, x_test, y_test, save_path=None):
     return {
         "train": train_m,
         "test": test_m
+    }
+
+
+def compute_bert_metrics(pred):
+    """
+    Compute metrics for BERT model during training.
+    """
+    from sklearn.metrics import (
+        accuracy_score,
+        precision_recall_fscore_support,
+        roc_auc_score
+    )
+    
+    labels = pred.label_ids
+    preds = pred.predictions.argmax(-1)
+
+    precision, recall, f1, _ = precision_recall_fscore_support(
+        labels, preds, average='binary'
+    )
+    acc = accuracy_score(labels, preds)
+
+    # AUC-ROC
+    probs = torch.softmax(torch.tensor(pred.predictions), dim=1)[:, 1].numpy()
+    auc = roc_auc_score(labels, probs)
+
+    return {
+        'accuracy': acc,
+        'f1': f1,
+        'precision': precision,
+        'recall': recall,
+        'auc_roc': auc
     }

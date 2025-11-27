@@ -16,7 +16,7 @@ data:
 # ============================================================
 mlflow:
   experiment_name: "DepressionDetection"
-  tracking_uri: "http://ec2-100-26-176-130.compute-1.amazonaws.com:5000/"
+  tracking_uri: "http://ec2-98-93-84-199.compute-1.amazonaws.com:5000/"
 
 # ============================================================
 # OUTPUT DIRECTORIES
@@ -39,7 +39,7 @@ logging:
 # ============================================================
 pipelines:
   classical_ml:
-    enabled: true
+    enabled: false
 
     tf_idf:
       max_features: 30000
@@ -65,35 +65,34 @@ pipelines:
         eta0: 0.01
         fit_intercept: false
 
-  bert_pipeline:
+  bert:
     enabled: true
 
-    model:
-      name: "roberta-base"
-      num_labels: 2
-      max_length_quantile: 0.99
-      use_lora: true
-
-    lora:
-      r: 16
-      lora_alpha: 32
-      lora_dropout: 0.1
-      target_modules: ["query", "value"]
-      bias: "none"
+    tokenization:
+      model_name: 'roberta-base'
+      max_length: 128
 
     training:
-      epochs: 10
+      num_epochs: 10
       batch_size: 128
+      learning_rate: 2e-5
       warmup_steps: 500
       weight_decay: 0.01
+      logging_steps: 100
       eval_steps: 500
       save_steps: 500
-      logging_steps: 100
-      fp16: true
-      metric_for_best_model: "f1"
-      report_to: "wandb"
       save_total_limit: 2
       early_stopping_patience: 3
+      fp16: true
+      report_to: 'mlflow'
+
+    lora:
+      enabled: true
+      r: 16
+      lora_alpha: 32
+      target_modules: ['query', 'value']
+      lora_dropout: 0.1
+      bias: 'none'
 
 # ============================================================
 # CROSS-VALIDATION SETTINGS
