@@ -46,7 +46,7 @@ jobs:
               exit 0
             else
               echo "Waiting for API..."
-              docker compose -f api/docker-compose.test.yml logs
+              docker compose -f api/docker-compose.test.yml logs --tail=20
               sleep 5
             fi
           done
@@ -138,7 +138,14 @@ jobs:
           sudo journalctl --vacuum-size=200M
           sudo apt-get clean
           sudo rm -rf /tmp/*
-
+      
+      - name: Stop and remove container if running
+        run: |
+          if [ "$(docker ps -aq -f name=mental-api)" ]; then
+            docker stop mental-api
+            docker rm -fv mental-api
+          fi
+          
       - name: Decode .env
         run: |
           echo "${{ secrets.ENV_FILE }}" | base64 -d > api/.env

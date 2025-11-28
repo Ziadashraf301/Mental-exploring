@@ -45,7 +45,7 @@ async def predict_emotion(
     """
     
     # Validate file type
-    if not file.content_type.startswith('image/'):
+    if not file.content_type or not file.content_type.startswith('image/'):
         raise HTTPException(
             status_code=400,
             detail=f"Invalid file type: {file.content_type}. Please upload an image file."

@@ -52,11 +52,14 @@ for ep in ["/emotion/health", "/emotion/model/info"]:
 TEST_DIR = Path(__file__).parent
 ASSETS_DIR = TEST_DIR / "assets"
 
+import mimetypes
+
 # Test emotion prediction
 image_path = ASSETS_DIR / "basket.jpg"
 if image_path.exists():
+    mime_type, _ = mimetypes.guess_type(image_path)
     with open(image_path, "rb") as f:
-        files = {"file": f}
+        files = {"file": (image_path.name, f, mime_type or "image/jpeg")}
         params = {"user_id": user_id} if user_id else {}
         r = requests.post(f"{BASE_URL}/emotion/predict", files=files, params=params)
         print_result("POST /emotion/predict", r.status_code, r.json())
