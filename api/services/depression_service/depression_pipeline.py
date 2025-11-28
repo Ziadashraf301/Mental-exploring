@@ -13,15 +13,17 @@ from config import settings
 import re
 import nltk
 import string
-from  nltk.tokenize import word_tokenize
-import warnings
-warnings.filterwarnings("ignore", category=FutureWarning, module="huggingface_hub")
 
 nltk.download('punkt_tab', quiet=True)
 nltk.download('wordnet', quiet=True)
 nltk.download('stopwords', quiet=True)
 
+from  nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
+
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning, module="huggingface_hub")
 
 class DepressionDetectionPipeline:
     def __init__(self):
@@ -258,7 +260,8 @@ class DepressionDetectionPipeline:
                     "name": self.CONFIG.DEPRESSION_MODEL_NAME,
                     "type": "BERT",
                     "device": str(self.DEVICE),
-                    "max_length": max_length
+                    "max_length": max_length,
+                    "version": self.CONFIG.DEPRESSION_MODEL_VERSION
                 }
             }
 

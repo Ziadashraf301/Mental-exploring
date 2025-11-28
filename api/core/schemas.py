@@ -47,6 +47,7 @@ class DepressionResponse(BaseModel):
     user_id: str
     prediction_id: str
     inference_time: float
+    model_name: str
     model_version: str
     timestamp: datetime
 

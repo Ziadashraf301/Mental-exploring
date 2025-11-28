@@ -91,6 +91,7 @@ async def predict_depression(
             prediction_id=prediction_id,
             inference_time=inference_time,
             model_name=result["model_info"]["name"],
+            model_version=result["model_info"]["version"],
             timestamp=datetime.now(),
         )
 
