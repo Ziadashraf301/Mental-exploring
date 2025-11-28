@@ -18,11 +18,19 @@ COPY docker/requirements.txt .
 # ---------- 5. Install Python dependencies ----------
 RUN pip install --no-cache-dir -r requirements.txt
 
-# ---------- 6. Copy the API code ONLY ----------
+# ---------- 6. Download NLTK data ----------
+RUN python - <<EOF
+import nltk
+nltk.download('punkt', quiet=True)
+nltk.download('wordnet', quiet=True)
+nltk.download('stopwords', quiet=True)
+EOF
+
+# ---------- 7. Copy the API code ONLY ----------
 COPY . .
 
-# ---------- 7. Expose FastAPI port ----------
+# ---------- 8. Expose FastAPI port ----------
 EXPOSE 8080
 
-# ---------- 8. Start FastAPI ----------
+# ---------- 9. Start FastAPI ----------
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "2"]

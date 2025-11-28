@@ -11,13 +11,7 @@ from datetime import datetime
 import logging
 from config import settings
 import re
-import nltk
 import string
-
-nltk.download('punkt_tab', quiet=True)
-nltk.download('wordnet', quiet=True)
-nltk.download('stopwords', quiet=True)
-
 from  nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer

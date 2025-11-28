@@ -10,11 +10,6 @@ from datetime import datetime
 import logging
 from config import settings
 import re
-import nltk
-
-nltk.download('punkt_tab')
-nltk.download('wordnet')
-
 from nltk.stem import WordNetLemmatizer
 
 
