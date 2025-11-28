@@ -19,7 +19,7 @@ services:
 
   api:
     build:
-      context: ./docker
+      context: .
       dockerfile: docker/Dockerfile
     env_file: .env.test
     depends_on:

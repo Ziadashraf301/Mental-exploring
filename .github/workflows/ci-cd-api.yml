@@ -62,7 +62,7 @@ jobs:
 
       - name: Shutdown Docker Compose
         run: |
-          docker-compose -f docker-compose.test.yml down -v
+          docker-compose -f api/docker-compose.test.yml down -v
 
   push-ecr:
     name: Build & Push ECR Image
