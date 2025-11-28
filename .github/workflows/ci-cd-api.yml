@@ -43,10 +43,10 @@ jobs:
           for i in {1..50}; do
             if curl -s http://localhost:8000/health > /dev/null; then
               echo "API is ready!"
-              docker compose -f api/docker-compose.test.yml logs
               exit 0
             else
               echo "Waiting for API..."
+              docker compose -f api/docker-compose.test.yml logs
               sleep 5
             fi
           done

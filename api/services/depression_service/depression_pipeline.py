@@ -56,7 +56,7 @@ class DepressionDetectionPipeline:
         try:
             self.TOKENIZER = AutoTokenizer.from_pretrained(
                 self.CONFIG.DEPRESSION_MODEL_NAME,
-                use_auth_token=self.CONFIG.HUGGINGFACE_TOKEN if hasattr(self.CONFIG, 'HUGGINGFACE_TOKEN') else None
+                token=self.CONFIG.DEPRESSION_MODEL_HUGGINGFACE_TOKEN if hasattr(self.CONFIG, 'DEPRESSION_MODEL_HUGGINGFACE_TOKEN') else None
             )
             self.LOGGER.info(f"✓ Tokenizer loaded successfully")
         except Exception as e:
@@ -68,7 +68,7 @@ class DepressionDetectionPipeline:
         try:
             self.MODEL = AutoModelForSequenceClassification.from_pretrained(
                 self.CONFIG.DEPRESSION_MODEL_NAME,
-                use_auth_token=self.CONFIG.HUGGINGFACE_TOKEN if hasattr(self.CONFIG, 'HUGGINGFACE_TOKEN') else None
+                token=self.CONFIG.DEPRESSION_MODEL_HUGGINGFACE_TOKEN if hasattr(self.CONFIG, 'DEPRESSION_MODEL_HUGGINGFACE_TOKEN') else None
             )
             self.MODEL.to(self.DEVICE)
             self.MODEL.eval()
