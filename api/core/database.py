@@ -16,10 +16,7 @@ from config import settings
 Base = declarative_base()
 
 
-# ===========================================
 # DATABASE MODELS
-# ===========================================
-
 class User(Base):
     """User model"""
     __tablename__ = "users"
@@ -43,8 +40,8 @@ class Prediction(Base):
     __table_args__ = {"schema": "mental_exploring_api"}
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(String, ForeignKey("mental_exploring_api.users.id"), index=True)
-    service_type = Column(String, index=True)  # "depression", "emotion", "sentiment"
+    user_id = Column(String, ForeignKey("mental_exploring_api.users.id", ondelete="CASCADE"), index=True)
+    service_type = Column(String, index=True)
     
     # Input data
     input_text = Column(Text, nullable=True)
@@ -71,10 +68,7 @@ class Prediction(Base):
     user = relationship("User", back_populates="predictions")
 
 
-# ===========================================
 # DATABASE CLASS
-# ===========================================
-
 class Database:
     """Database operations"""
     
@@ -100,10 +94,7 @@ class Database:
         """Close database connection"""
         await self.engine.dispose()
     
-    # ===========================================
     # USER OPERATIONS
-    # ===========================================
-    
     async def create_user(self, name: str, email: str = None, metadata: Dict = None) -> str:
         """Create new user"""
         async with self.async_session() as session:

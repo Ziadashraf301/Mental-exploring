@@ -50,7 +50,7 @@ jobs:
             fi
           done
           echo "API did not start in time!"
-          docker-compose -f docker-compose.test.yml logs
+          docker compose -f docker-compose.test.yml logs
           exit 1
 
       - name: Run Full API Tests
@@ -62,7 +62,7 @@ jobs:
 
       - name: Shutdown Docker Compose
         run: |
-          docker-compose -f api/docker-compose.test.yml down -v
+          docker compose -f api/docker-compose.test.yml down -v
 
   push-ecr:
     name: Build & Push ECR Image

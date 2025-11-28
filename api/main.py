@@ -19,7 +19,6 @@ from services import get_emotion_service, get_sentiment_service, get_depression_
 
 # Import routers
 from routers import depression, emotion, sentiment, users, analytics
-# from api.routers import depression, sentiment
 
 # Create logs directory
 Path(settings.LOG_FILE).parent.mkdir(parents=True, exist_ok=True)
@@ -67,7 +66,11 @@ async def lifespan(app: FastAPI):
         sentiment_service.initialize()
         logger.info("✓ Sentiment Analysis Service initialized")
           
-        # TODO: Initialize Depression Detection Service
+        # Initialize Depression Detection Service
+        logger.info("Initializing Dpression Detection Service...")
+        depression_service = get_depression_service()
+        depression_service.initialize()
+        logger.info("✓ Dpression Detection Service initialized")
 
         logger.info("API STARTED SUCCESSFULLY")
         logger.info(f"Documentation: http://{settings.API_HOST}:{settings.API_PORT}/docs")
@@ -139,7 +142,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 # ROUTERS
 app.include_router(emotion.router)
-# app.include_router(depression.router)
+app.include_router(depression.router)
 app.include_router(sentiment.router)
 app.include_router(users.router)
 app.include_router(analytics.router)
@@ -155,7 +158,7 @@ async def root():
         "status": "running",
         "services": {
             "emotion_detection": "active",
-            "depression_detection": "planned",
+            "depression_detection": "active",
             "sentiment_analysis": "active"
         },
         "endpoints": {
@@ -185,14 +188,17 @@ async def health_check():
 
         sentiment_service = get_sentiment_service()
         sentiment_status = sentiment_service.initialized
+
+        depression_service = get_depression_service()
+        depression_status = depression_service.initialized
         
-        all_healthy = db_status and emotion_status and sentiment_status
+        all_healthy = db_status and emotion_status and sentiment_status and depression_status
         
         return {
             "status": "healthy" if all_healthy else "degraded",
             "services": {
                 "emotion_detection": emotion_status,
-                "depression_detection": False,  # TODO
+                "depression_detection": depression_status,
                 "sentiment_analysis": sentiment_status
             },
             "dependencies": {

@@ -55,7 +55,7 @@ for ep in ["/emotion/health", "/emotion/model/info"]:
     print_result(f"GET {ep}", r.status_code, r.json())
 
 # Test emotion prediction
-image_path = "assets/basket.jpg"
+image_path = "./test/assets/basket.jpg"
 if Path(image_path).exists():
     with open(image_path, "rb") as f:
         files = {"file": f}
