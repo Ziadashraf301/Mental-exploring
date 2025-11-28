@@ -1,0 +1,37 @@
+version: "3.9"
+
+services:
+  postgres_test:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ziad
+      POSTGRES_PASSWORD: ziad
+      POSTGRES_DB: mental_exploring_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ziad"]
+      interval: 5s
+      retries: 10
+      start_period: 5s
+
+  api:
+    build:
+      context: ./api
+      dockerfile: docker/Dockerfile
+    env_file: .env.test
+    depends_on:
+      postgres_test:
+        condition: service_healthy
+    ports:
+      - "8000:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 5s
+      retries: 12
+      start_period: 5s
+
+volumes:
+  postgres_test_data:

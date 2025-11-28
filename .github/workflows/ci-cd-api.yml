@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   integration:
-    name: Continuous Integration
+    name: Integration Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -29,123 +29,58 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests pytest
 
-      - name: Run API Tests Locally
+      - name: Decode .env.test
         run: |
-          echo "Skipping tests for CI host (will test in container later)"
+          echo "${{ secrets.ENV_TEST_FILE }}" | base64 -d > api/.env.test
+          ls -la api/.env.test
 
-  # build-and-test-docker:
-  #   name: Build & Test Docker Image
-  #   needs: integration
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout Code
-  #       uses: actions/checkout@v3
+      - name: Start Docker Compose
+        run: |
+          docker-compose -f docker-compose.test.yml up -d --build
 
-  #     - name: Install Utilities
-  #       run: |
-  #         sudo apt-get update
-  #         sudo apt-get install -y jq unzip
+      - name: Wait for API to become healthy
+        run: |
+          for i in {1..20}; do
+            if curl -s http://localhost:8000/health > /dev/null; then
+              echo "API is ready!"
+              exit 0
+            else
+              echo "Waiting for API..."
+              sleep 5
+            fi
+          done
+          echo "API did not start in time!"
+          docker-compose -f docker-compose.test.yml logs
+          exit 1
 
-  #     - name: Write .env file
-  #       run: |
-  #         echo "${{ secrets.ENV_FILE }}" | base64 -d > api/.env
-  #         ls -la api/.env
-          
-  #     - name: Debug .env file
-  #       run: |
-  #         echo "=== File size and encoding ==="
-  #         ls -lh api/.env
-  #         file api/.env
-  #         echo ""
-  #         echo "=== First 10 lines of .env ==="
-  #         head -10 api/.env
-  #         echo ""
-  #         echo "=== Checking problematic lines ==="
-  #         grep "ALLOWED_ORIGINS" api/.env
-  #         grep "EMOTION_IMAGE_SIZE" api/.env
-  #         echo ""
-  #         echo "=== Hex dump of ALLOWED_ORIGINS line ==="
-  #         grep "ALLOWED_ORIGINS" api/.env | xxd
+      - name: Run Full API Tests
+        run: |
+          echo "Starting full API tests..."
+          set -o errexit   # Exit on error
+          set -o pipefail  # Fail if any command in a pipe fails
+          python -u api/test/test_api.py
 
-  #     - name: Build Docker image
-  #       run: |
-  #         docker build -t mental-exploring-api:latest -f api/docker/Dockerfile api/
-
-  #     # - name: Run container for testing
-  #     #   run: |
-  #     #     docker run -d --name mental-api-test -p 8080:8080 mental-exploring-api:latest
-
-  #     # - name: Wait for API to start with logs
-  #     #   run: |
-  #     #     for i in {1..20}; do
-  #     #       if curl -s http://localhost:8080/docs > /dev/null; then
-  #     #         echo "API is up!"
-  #     #         exit 0
-  #     #       else
-  #     #         echo "Waiting for API to start... (attempt $i)"
-  #     #         docker logs mental-api-test --tail 10
-  #     #         sleep 15
-  #     #       fi
-  #     #     done
-  #     #     echo "API did not start in time."
-  #     #     docker logs mental-api-test
-  #     #     exit 1
-
-  #     # - name: Run API tests
-  #     #   run: |
-  #     #     python api/test/test_api.py
-
-  #     # - name: Stop test container
-  #     #   run: |
-  #     #     docker stop mental-api-test
-  #     #     docker rm mental-api-test
+      - name: Shutdown Docker Compose
+        run: |
+          docker-compose -f docker-compose.test.yml down -v
 
   push-ecr:
-      name: Build & Push ECR Image
-      needs: integration
-      runs-on: ubuntu-latest
-      steps:
-        - name: Checkout Code
-          uses: actions/checkout@v3
-
-        - name: Write .env file
-          run: |
-            echo "${{ secrets.ENV_FILE }}" | base64 -d > api/.env
-            ls -la api/.env
-
-        - name: Build Docker image
-          run: |
-            docker build -t mental-exploring-api:latest -f api/docker/Dockerfile api/
-
-        - name: Configure AWS credentials
-          uses: aws-actions/configure-aws-credentials@v1
-          with:
-            aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-            aws-region: ${{ secrets.AWS_REGION }}
-
-        - name: Login to Amazon ECR
-          id: login-ecr
-          uses: aws-actions/amazon-ecr-login@v1
-
-        - name: Tag and Push Docker Image
-          env:
-            ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-            ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
-            IMAGE_TAG: latest
-          run: |
-            docker tag mental-exploring-api:latest $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-            docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-
-  deploy:
-    name: Deploy to Self-Hosted
-    needs: push-ecr
-    runs-on: [self-hosted, api-runner]
+    name: Build & Push ECR Image
+    needs: integration
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Configure AWS credentials
+      - name: Decode .env
+        run: |
+          echo "${{ secrets.ENV_FILE }}" | base64 -d > api/.env
+          ls -la api/.env
+
+      - name: Build Docker Image
+        run: docker build -t mental-exploring-api:latest -f api/docker/Dockerfile api/
+
+      - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -156,11 +91,38 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Pull latest image
+      - name: Tag and Push Docker Image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
+          IMAGE_TAG: latest
         run: |
-          docker pull ${{ secrets.AWS_ECR_LOGIN_URI }}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
+          docker tag mental-exploring-api:latest $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-      - name: Deep Clean Docker & Runner Logs
+  deploy:
+    name: Deploy to Self-Hosted Runner
+    needs: push-ecr
+    runs-on: [self-hosted, api-runner]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Pull Latest Image
+        run: docker pull ${{ secrets.AWS_ECR_LOGIN_URI }}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
+
+      - name: Clean Docker & Runner Logs
         run: |
           docker system prune -af --volumes
           sudo rm -rf ~/actions-runner/_diag/*.log
@@ -168,17 +130,17 @@ jobs:
           sudo apt-get clean
           sudo rm -rf /tmp/*
 
-      - name: Write .env file
+      - name: Decode .env
         run: |
           echo "${{ secrets.ENV_FILE }}" | base64 -d > api/.env
           ls -la api/.env
 
-      - name: Run new container
+      - name: Run Container
         run: |
           docker run -d --name mental-api -p 8080:8080 ${{ secrets.AWS_ECR_LOGIN_URI }}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
 
-      - name: Clean up .env file
-        run: rm -f .env
+      - name: Cleanup .env
+        run: rm -f api/.env
 
-      - name: Clean old images
+      - name: Cleanup Old Images
         run: docker system prune -f
