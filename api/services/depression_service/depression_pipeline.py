@@ -21,7 +21,6 @@ nltk.download('stopwords', quiet=True)
 
 from nltk.stem import WordNetLemmatizer
 
-
 class DepressionDetectionPipeline:
     def __init__(self):
         # Load configuration
@@ -44,35 +43,44 @@ class DepressionDetectionPipeline:
         self.DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     def initialize_pipeline(self):
-        """
-        Initialize the inference pipeline
-        Load BERT model and tokenizer from Hugging Face
-        """
+        """Initialize the inference pipeline with robust error handling"""
         self.LOGGER.info("INITIALIZING DEPRESSION DETECTION INFERENCE PIPELINE")
         self.LOGGER.info(f"Using device: {self.DEVICE}")
 
-        # Load tokenizer
+        token = self.CONFIG.DEPRESSION_MODEL_HUGGINGFACE_TOKEN if self.CONFIG.DEPRESSION_MODEL_HUGGINGFACE_TOKEN else None
+        
+        # Try loading with fast tokenizer first, fallback to slow
         self.LOGGER.info(f"Loading tokenizer from: {self.CONFIG.DEPRESSION_MODEL_NAME}")
         try:
             self.TOKENIZER = AutoTokenizer.from_pretrained(
                 self.CONFIG.DEPRESSION_MODEL_NAME,
-                token=self.CONFIG.DEPRESSION_MODEL_HUGGINGFACE_TOKEN if hasattr(self.CONFIG, 'DEPRESSION_MODEL_HUGGINGFACE_TOKEN') else None
+                token=token,
+                use_fast=True
             )
-            self.LOGGER.info(f"✓ Tokenizer loaded successfully")
+            self.LOGGER.info(f"✓ Fast tokenizer loaded successfully")
         except Exception as e:
-            self.LOGGER.error(f"✗ Failed to load tokenizer: {str(e)}")
-            raise
+            self.LOGGER.warning(f"Fast tokenizer failed: {str(e)}, trying slow tokenizer...")
+            try:
+                self.TOKENIZER = AutoTokenizer.from_pretrained(
+                    self.CONFIG.DEPRESSION_MODEL_NAME,
+                    token=token,
+                    use_fast=False
+                )
+                self.LOGGER.info(f"✓ Slow tokenizer loaded successfully")
+            except Exception as e2:
+                self.LOGGER.error(f"✗ Both tokenizers failed: {str(e2)}")
+                raise
 
         # Load model
         self.LOGGER.info(f"Loading model from: {self.CONFIG.DEPRESSION_MODEL_NAME}")
         try:
             self.MODEL = AutoModelForSequenceClassification.from_pretrained(
                 self.CONFIG.DEPRESSION_MODEL_NAME,
-                token=self.CONFIG.DEPRESSION_MODEL_HUGGINGFACE_TOKEN if hasattr(self.CONFIG, 'DEPRESSION_MODEL_HUGGINGFACE_TOKEN') else None
+                token=token
             )
             self.MODEL.to(self.DEVICE)
             self.MODEL.eval()
-            self.LOGGER.info(f"✓ Model loaded successfully and set to eval mode")
+            self.LOGGER.info(f"✓ Model loaded successfully")
         except Exception as e:
             self.LOGGER.error(f"✗ Failed to load model: {str(e)}")
             raise
