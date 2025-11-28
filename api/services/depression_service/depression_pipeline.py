@@ -14,6 +14,8 @@ import re
 import nltk
 import string
 from  nltk.tokenize import word_tokenize
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning, module="huggingface_hub")
 
 nltk.download('punkt_tab', quiet=True)
 nltk.download('wordnet', quiet=True)

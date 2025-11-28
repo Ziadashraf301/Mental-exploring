@@ -54,6 +54,14 @@ jobs:
           docker compose -f api/docker-compose.test.yml logs
           exit 1
 
+      - name: Verify Test Assets
+        run: |
+          echo "Checking for test assets..."
+          ls -la api/test/assets/
+          if [ ! -f "api/test/assets/basket.jpg" ]; then
+            echo "ERROR: Test image not found!"
+            exit 1
+          fi
       - name: Run Full API Tests
         run: |
           echo "Starting full API tests..."

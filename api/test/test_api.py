@@ -21,17 +21,13 @@ def print_result(endpoint, status, data):
         print(f"   Response: {json.dumps(data, indent=2)[:200]}...")
     print()
 
-# ============================
 # ROOT & HEALTH
-# ============================
 print_section("Root & Health Endpoints")
 for ep in ["/", "/health"]:
     r = requests.get(f"{BASE_URL}{ep}")
     print_result(f"GET {ep}", r.status_code, r.json())
 
-# ============================
 # USER MANAGEMENT
-# ============================
 print_section("User Management")
 user_data = {"name": "Test User", "email": "test@example.com", "metadata": {"source": "test_script"}}
 r = requests.post(f"{BASE_URL}/users", json=user_data)
@@ -46,17 +42,19 @@ if user_id:
     r = requests.patch(f"{BASE_URL}/users/{user_id}", params={"name": "Updated Test User"})
     print_result(f"PATCH /users/{user_id}", r.status_code, r.json())
 
-# ============================
 # EMOTION DETECTION
-# ============================
 print_section("Emotion Detection")
 for ep in ["/emotion/health", "/emotion/model/info"]:
     r = requests.get(f"{BASE_URL}{ep}")
     print_result(f"GET {ep}", r.status_code, r.json())
 
+# Get the directory where the test script is located
+TEST_DIR = Path(__file__).parent
+ASSETS_DIR = TEST_DIR / "assets"
+
 # Test emotion prediction
-image_path = "./test/assets/basket.jpg"
-if Path(image_path).exists():
+image_path = ASSETS_DIR / "basket.jpg"
+if image_path.exists():
     with open(image_path, "rb") as f:
         files = {"file": f}
         params = {"user_id": user_id} if user_id else {}
@@ -65,9 +63,7 @@ if Path(image_path).exists():
 else:
     print(f"⚠️  Skipping emotion prediction - image not found: {image_path}")
 
-# ============================
 # DEPRESSION DETECTION
-# ============================
 print_section("Depression Detection")
 dep_payload = {"text": "I feel very sad today.", "user_id": user_id}
 for ep in ["/depression/health", "/depression/model/info"]:
@@ -77,9 +73,7 @@ for ep in ["/depression/health", "/depression/model/info"]:
 r = requests.post(f"{BASE_URL}/depression/predict", json=dep_payload)
 print_result("POST /depression/predict", r.status_code, r.json())
 
-# ============================
 # SENTIMENT ANALYSIS
-# ============================
 print_section("Sentiment Analysis")
 sent_payload = {"text": "I love using this API!", "user_id": user_id}
 for ep in ["/sentiment/health", "/sentiment/model/info"]:
@@ -89,9 +83,7 @@ for ep in ["/sentiment/health", "/sentiment/model/info"]:
 r = requests.post(f"{BASE_URL}/sentiment/predict", json=sent_payload)
 print_result("POST /sentiment/predict", r.status_code, r.json())
 
-# ============================
 # ANALYTICS
-# ============================
 print_section("Analytics Endpoints")
 analytics_endpoints = [
     "/analytics",
@@ -111,9 +103,7 @@ for ep in analytics_endpoints:
     r = requests.get(f"{BASE_URL}{ep}", params=params)
     print_result(f"GET {ep}", r.status_code, r.json())
 
-# ============================
 # CLEANUP
-# ============================
 print_section("Cleanup")
 if user_id:
     r = requests.delete(f"{BASE_URL}/users/{user_id}")

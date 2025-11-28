@@ -53,7 +53,7 @@ async def predict_depression(
         depression_service = get_depression_service()
 
         # Run prediction
-        result = depression_service.predict_depression(request.text)
+        result = depression_service.predict(request.text)
 
         if not result["success"]:
             raise HTTPException(
@@ -116,6 +116,6 @@ async def depression_model_info():
     """Return depression model metadata"""
     try:
         service = get_depression_service()
-        return service.get_model_info()
+        return service.get_info()
     except Exception as e:
         return {"error": str(e)}

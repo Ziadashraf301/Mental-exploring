@@ -30,7 +30,8 @@ class Settings(BaseSettings):
     
     # Depression Detection Model
     DEPRESSION_MODEL_NAME: str = "ziadashraf98765/roberta-depression-detection-lora-merged"
-    DEPRESSION_MODEL_VERSION: str = "1.0"
+    DEPRESSION_MODEL_VERSION: str = "1"
+    DEPRESSION_ML_MODEL_NAME: str = 'Depression_Detection_sgd_classifier_Model'
     DEPRESSION_MODEL_HUGGINGFACE_TOKEN: str = ""
     DEPRESSION_MAX_LENGTH: int = 128
     DEPRESSION_SAVE_RESULTS: bool = True
@@ -40,7 +41,7 @@ class Settings(BaseSettings):
     
     # Sentiment Analysis Model
     SENTIMENT_MODEL_NAME: str = "Sentiment_analysisLogisticRegression_Model"
-    SENTIMENT_MODEL_VERSION: str = "1.0"
+    SENTIMENT_MODEL_VERSION: str = "1"
     SENTIMENT_MODEL_STAGE: str = "Production"
     SENTIMENT_VACTORIZER_MODEL: str = "TFIDF_Vectorizer_Sentiment"
     SENTIMENT_VACTORIZER_MODEL_VERSION: str = "4.0"
