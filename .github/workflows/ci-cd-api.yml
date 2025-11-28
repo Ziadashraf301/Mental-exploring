@@ -160,9 +160,13 @@ jobs:
         run: |
           docker pull ${{ secrets.AWS_ECR_LOGIN_URI }}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
 
-      - name: Stop and remove old container if exists
+      - name: Deep Clean Docker & Runner Logs
         run: |
-          docker ps -a -q --filter "name=mental-api" | grep -q . && docker rm -f mental-api || echo "No existing container"
+          docker system prune -af --volumes
+          sudo rm -rf ~/actions-runner/_diag/*.log
+          sudo journalctl --vacuum-size=200M
+          sudo apt-get clean
+          sudo rm -rf /tmp/*
 
       - name: Write .env file
         run: |
