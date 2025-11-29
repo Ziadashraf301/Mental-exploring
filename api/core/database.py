@@ -10,9 +10,11 @@ from sqlalchemy import (
 from datetime import datetime, timedelta
 from typing import Dict, List
 import uuid
-
+from sqlalchemy.exc import IntegrityError
+import logging
 from config import settings
 
+logger = logging.getLogger(__name__)
 Base = declarative_base()
 
 
