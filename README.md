@@ -254,19 +254,116 @@ https://github.com/Ziadashraf301/Mental-exploring/assets/111798631/2ebc6909-3733
 - AWS Account (for deployment)
 - Git
 
-### Environment Configuration
+## Environment Configuration (Dev, Test, Deploy)
 
-Both the Airflow pipeline and FastAPI service require environment variables. Copy and configure the `.env.example` file:
+The project uses **three separate environments**:
+
+* **Development (DEV)** → local development (Airflow, FastAPI)
+* **Testing (TEST)** → GitHub Actions CI pipeline
+* **Production/Deployment (DEPLOY)** → AWS EC2 + ECR + S3 + RDS
+
+Each environment uses its own `.env` file and its own encoding/usage workflow.
+
+---
+
+## Environment Files Overview
+
+| Environment | File Location               | Purpose                           |
+| ----------- | --------------------------- | --------------------------------- |
+| **DEV**     | `.env` (root) + `api/.env`  | Local development (Airflow + API) |
+| **TEST**    | `api/.env.test`             | GitHub Actions CI tests           |
+| **DEPLOY**  | `api/.env` (decoded on EC2) | Production API environment        |
+
+---
+
+# TEST ENVIRONMENT (GitHub Actions CI/CD)
+
+GitHub Actions cannot store multi-line `.env` files.
+Therefore, the `.env.test` file must be **Base64-encoded** and stored in GitHub Secrets.
+
+### 1. Encode the file locally:
 
 ```bash
-# In the root directory (for Airflow)
+base64 api/.env.test
+```
+
+Copy the output and paste it into:
+
+```
+ENV_TEST_FILE (GitHub Secret)
+```
+
+### 2. GitHub Actions will decode it:
+
+```yaml
+echo "${{ secrets.ENV_TEST_FILE }}" | base64 -d > api/.env.test
+```
+
+This file is used when GitHub Actions:
+
+* Starts Docker Compose for the test API
+* Runs health checks
+* Runs the full FastAPI test suite
+* Loads assets (images) for model inference tests
+
+---
+
+# DEVELOPMENT ENVIRONMENT (Local)
+
+### Copy example files:
+
+```bash
+# Airflow
 cp .env.example .env
 
-# In the api/ directory (for FastAPI)
+# FastAPI
 cp api/.env.example api/.env
 ```
 
-#### Required Environment Variables
+These files are **not encoded**, only stored locally.
+
+### Local Dev is used for:
+
+* Running the Airflow training pipeline
+* Running the MLflow server (local or remote)
+* Running FastAPI locally
+* Debugging and development
+
+---
+
+# DEPLOYMENT ENVIRONMENT (AWS EC2)
+
+Production uses the exact same `api/.env` file —
+but it must also be **Base64-encoded** before storing it in GitHub Secrets.
+
+### 1. Encode production `.env`:
+
+```bash
+base64 api/.env
+```
+
+Add output to GitHub Secrets as:
+
+```
+ENV_FILE
+```
+
+### 2. GitHub Actions will decode this on the deployment runner:
+
+```yaml
+echo "${{ secrets.ENV_FILE }}" | base64 -d > api/.env
+```
+
+### 3. The deployment job then runs:
+
+* Pull ECR image
+* Start the container on EC2
+* Load production `.env`
+* Expose FastAPI on port 8080
+
+### DEVELOPMENT ENVIRONMENT VARIABLES
+
+#### Airflow (.env in root)
 
 ```dotenv
 # Postgres for Airflow
@@ -283,13 +380,13 @@ AWS_DEFAULT_REGION=us-east-1
 # Airflow Configuration
 AIRFLOW_EXECUTOR=LocalExecutor
 AIRFLOW_SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:your_password@postgres_airflow:5432/airflow
-AIRFLOW_FERNET_KEY=your_fernet_key  # Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+AIRFLOW_FERNET_KEY=your_fernet_key
 AIRFLOW_DEFAULT_TIMEZONE=UTC
 AIRFLOW_LOAD_EXAMPLES=False
 AIRFLOW_USER=admin
 AIRFLOW_PASSWORD=admin
 
-# SMTP Configuration (for Airflow alerts)
+# SMTP for Alerts
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_STARTTLS=True
@@ -299,8 +396,84 @@ SMTP_PASSWORD=your_app_password
 SMTP_MAIL_FROM=your_email@gmail.com
 ```
 
+---
+
+#### FASTAPI ENVIRONMENT VARIABLES
+
+(Used in `api/.env`, `api/.env.test`, or encoded for production)
+
+```dotenv
+# API Settings
+API_TITLE="Mental Health Detection API"
+API_VERSION="1.0.0"
+API_DESCRIPTION="Unified API for Depression, Emotion, and Sentiment Detection Services"
+API_HOST="0.0.0.0"
+API_PORT=8080
+
+# CORS
+ALLOWED_ORIGINS=["*"]
+
+# Database
+DATABASE_URL=""
+
+# MLflow Settings
+MLFLOW_TRACKING_URI=""
+
+# Depression Detection Model
+DEPRESSION_MODEL_NAME="ziadashraf98765/roberta-depression-detection-lora-merged"
+DEPRESSION_ML_MODEL_NAME="Depression_Detection_sgd_classifier_Model"
+DEPRESSION_MODEL_VERSION="1"
+DEPRESSION_MODEL_HUGGINGFACE_TOKEN=""
+DEPRESSION_MAX_LENGTH=128
+DEPRESSION_SAVE_RESULTS=True
+DEPRESSION_RESULTS_DIR="results"
+DEPRESSION_LOG_FILE="logs/depression_detection_inference.log"
+DEPRESSION_LOG_LEVEL="INFO"
+
+# Emotion Detection Model
+EMOTION_MODEL_NAME="CNN_EmotionDetection"
+EMOTION_MODEL_VERSION="1"
+EMOTION_MODEL_STAGE="Production"
+EMOTION_FACE_CONFIDENCE_THRESHOLD=0.9
+EMOTION_IMAGE_SIZE="[48,48]"
+EMOTION_NORMALIZE=True
+EMOTION_SAVE_RESULTS=True
+EMOTION_RESULTS_DIR="results"
+EMOTION_LOG_FILE="logs/emotion_service_inference.log"
+EMOTION_LOG_LEVEL="INFO"
+
+# Sentiment Analysis Model
+SENTIMENT_MODEL_NAME="Sentiment_analysisLogisticRegression_Model"
+SENTIMENT_MODEL_VERSION="1"
+SENTIMENT_MODEL_STAGE="Production"
+SENTIMENT_VACTORIZER_MODEL="TFIDF_Vectorizer_Sentiment"
+SENTIMENT_VACTORIZER_MODEL_VERSION="1"
+SENTIMENT_SAVE_RESULTS=True
+SENTIMENT_RESULTS_DIR="results"
+SENTIMENT_LOG_FILE="logs/sentiment_service_inference.log"
+SENTIMENT_LOG_LEVEL="INFO"
+
+# Rate Limiting
+RATE_LIMIT_REQUESTS=100
+RATE_LIMIT_WINDOW=60
+
+# Logging
+LOG_LEVEL="INFO"
+LOG_FILE="logs/api.log"
+
+# Security
+API_KEY_ENABLED=False
+API_KEY=""
+
+# AWS Settings
+AWS_ACCESS_KEY_ID=""
+AWS_SECRET_ACCESS_KEY=""
+AWS_DEFAULT_REGION=""
+```
+
 ### Local Development Setup
-First, create an MLFlow server locally or in AWS (Set S3 bucket), and update the URI in each train_config.yaml (tracking_uri) and .env files (MLFLOW_TRACKING_URI)
+First, create an MLFlow server locally or in AWS (Set S3 bucket), and update the URI in each train_config.yaml (tracking_uri) and .env files (MLFLOW_TRACKING_URI).
+
 #### 1. Running Airflow (Model Training Pipeline)
 
 From the **root directory**:
