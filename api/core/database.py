@@ -86,7 +86,7 @@ class Database:
         )
     
     async def connect(self):
-        """Create database tables"""
+        """Create database tables """
         async with self.engine.begin() as conn:
             # Check if schema exists
             result = await conn.execute(text(
