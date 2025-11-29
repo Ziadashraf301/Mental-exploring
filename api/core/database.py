@@ -88,19 +88,24 @@ class Database:
     async def connect(self):
         """Create database tables"""
         async with self.engine.begin() as conn:
-            # Ensure schema exists - handle race condition
-            try:
-                await conn.execute(text("CREATE SCHEMA IF NOT EXISTS mental_exploring_api;"))
-            except IntegrityError as e:
-                # Race condition: schema was created by another instance
-                error_msg = str(e).lower()
-                if "pg_namespace_nspname_index" in error_msg or "already exists" in error_msg:
-                    logger.info("Schema 'mental_exploring_api' already exists (created by another instance)")
-                else:
-                    # Some other integrity error, re-raise it
-                    raise
+            # Check if schema exists
+            result = await conn.execute(text(
+                "SELECT schema_name FROM information_schema.schemata "
+                "WHERE schema_name = 'mental_exploring_api';"
+            ))
             
-            # Create tables
+            if not result.fetchone():
+                # Schema doesn't exist, create it
+                try:
+                    await conn.execute(text("CREATE SCHEMA mental_exploring_api;"))
+                except IntegrityError as e:
+                    # Another instance created it between check and create
+                    error_msg = str(e).lower()
+                    if "pg_namespace_nspname_index" not in error_msg and "already exists" not in error_msg:
+                        raise
+                    logger.info("Schema created by another instance during creation")
+            
+            # Create tables (idempotent operation)
             await conn.run_sync(Base.metadata.create_all)
     
     async def disconnect(self):
