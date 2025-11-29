@@ -283,8 +283,8 @@ def train_data_task():
 | Model | Accuracy | Precision | Recall | F1-Score | ROC AUC | Training Time |
 |-------|----------|-----------|--------|----------|---------|---------------|
 | Multinomial Naive Bayes | 77.01% | 76.93% | 77.16% | 77.04% | 85.18% | ~30s |
-|  Logistic Regression (Production)  | 78.33% | 77.94% | 79.03% | 78.48% | 86.44% | ~2 min |
-| 🏆 Linear SVC| 78.12% | 77.52% | 79.22% | 78.36% | 86.30% | ~2 min |
+| 🏆 Logistic Regression (Production)  | 78.33% | 77.94% | 79.03% | 78.48% | 86.44% | ~2 min |
+| Linear SVC| 78.12% | 77.52% | 79.22% | 78.36% | 86.30% | ~2 min |
 
 
 **Artifacts:**
