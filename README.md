@@ -64,55 +64,70 @@ The API follows a layered architecture pattern:
 
 ![MLOps Architecture](docs/MLOps_Deployment_Architecture.png)
 
-The MLOps pipeline implements a complete CI/CD workflow:
+The MLOps pipeline implements a complete CI/CD workflow across development, training, and production environments:
 
 **Development & Training (Local Environment)**:
-- **Apache Airflow**: Orchestrates ML pipelines with dedicated DAGs for each model
-  - Data loading → Preprocessing → Feature extraction → Model training
-  - Automated scheduling and monitoring of pipeline tasks
-  - Connects to PostgreSQL for metadata storage
-- **MLflow**: Tracks experiments, models, and metrics
-  - Logs model parameters, metrics, and artifacts
-  - Stores model versions in model registry
-  - Retrieves latest/best model versions for deployment
+- **FastAPI Application**: 
+  - Serves ML model predictions via RESTful API endpoints
+  - Handles model artifact retrieval and version management
+  - Executes SQL queries for data operations
+- **MLflow**: Experiment tracking and model registry
+  - Logs model parameters, metrics, and training artifacts
+  - Maintains model versioning in centralized registry
+  - Returns metadata and registry information for model retrieval
+  - Tracks and writes training metadata to PostgreSQL backend
+  - Stores model artifacts, plots, and datasets in S3
+- **PostgreSQL Database**: 
+  - Stores application data (users, predictions)
+  - Maintains MLflow experiment tracking metadata
+  - Executes SQL queries for data read/write operations
+- **RDS (PostgreSQL)**: Cloud-based relational database
+  - Mirrors local PostgreSQL functionality in production
+  - Returns query results to application layer
 
 **Version Control & CI/CD**:
 - **GitHub**: Source code repository
-  - Developers push code/commits to trigger workflows
-- **GitHub Actions**: Automated CI/CD pipeline
-  - Builds Docker images on code push
-  - Runs tests and validates builds
-  - Pushes images to Amazon ECR
+  - Developers push code commits to trigger automated workflows
+- **GitHub Actions**: CI/CD automation pipeline
+  - Runs comprehensive test suites on code push
+  - Builds and pushes Docker images to Amazon ECR
+  - Triggers deployment workflows to EC2 instances
 
 **AWS Cloud Infrastructure**:
 - **Amazon ECR (Elastic Container Registry)**: 
-  - Stores Docker container images
-  - Provides secure, scalable image storage
-- **Amazon S3**: 
-  - Stores MLflow artifacts (models, plots, datasets)
-  - Logs experiments and model metadata
-- **Amazon RDS (PostgreSQL)**:
-  - Application backend store for users and predictions
-  - MLflow backend store for experiment tracking
-  - Stores run metadata, parameters, and metrics
+  - Stores versioned Docker container images
+  - Provides secure, scalable image repository
+  - Supplies container images for EC2 deployment
+- **Amazon S3**: Object storage for ML artifacts
+  - Hosts MLflow experiment artifacts (models, visualizations, datasets)
+  - Maintains experiment logs and model metadata
 - **EC2 Instance (MLflow Server)**:
-  - Hosts MLflow tracking server
-  - Provides UI for experiment visualization
-  - Manages model registry
+  - Hosts MLflow tracking server with web UI
+  - Provides experiment visualization and comparison
+  - Manages centralized model registry
+  - Pushes code and commits to trigger GitHub Actions
 - **EC2 Instance (App Deployment)**:
-  - Runs FastAPI application containers
-  - Pulls latest images from ECR
-  - Executes SQL queries and writes data to RDS
-  - Returns prediction results to clients
+  - Runs containerized FastAPI application
+  - Pulls latest Docker images from ECR on deployment
+  - Connects to RDS for data persistence
+  - Retrieves models from MLflow for inference
+  - Returns prediction results to end users
+- **Apache Airflow (Local Machine)**: ML pipeline orchestration
+  - Orchestrates end-to-end ML workflows via DAGs
+  - Automates data loading, preprocessing, feature extraction, and model training
+  - Schedules and monitors pipeline execution
+  - Connects to PostgreSQL for workflow metadata storage
 
 **Deployment Flow**:
-1. Developer commits code to GitHub
-2. GitHub Actions triggers automated build
-3. Docker image is built and pushed to ECR
-4. EC2 instance pulls new image from ECR
-5. Container is deployed with updated models
-6. Application connects to MLflow for model loading
-7. Predictions are served to end users
+1. Developer commits code to GitHub repository
+2. GitHub Actions automatically triggers CI/CD pipeline
+3. Automated tests validate code quality and functionality
+4. Docker image is built with latest application code
+5. Image is pushed to Amazon ECR with version tags
+6. EC2 app instance pulls updated image from ECR
+7. New container is deployed, replacing previous version
+8. Application loads latest model versions from MLflow
+9. FastAPI serves predictions with updated models to clients
 
 ### Technology Stack
 - **Orchestration**: Apache Airflow
@@ -399,7 +414,7 @@ The GitHub repository must include:
 Once the FastAPI service is running, open the interactive documentation at:
 **`http://localhost:8000/docs`**
 
-Below is the **full list of all endpoints** included in FastAPI service.
+Below is the **full list of all endpoints** included in the FastAPI app.
 
 ---
 

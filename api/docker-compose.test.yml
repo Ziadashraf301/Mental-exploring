@@ -26,7 +26,7 @@ services:
       postgres_test:
         condition: service_healthy
     ports:
-      - "8000:8080"
+      - "8080:8080"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 5s

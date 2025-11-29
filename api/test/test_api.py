@@ -7,7 +7,7 @@ import requests
 import json
 from pathlib import Path
 
-BASE_URL = "http://localhost:8000"
+BASE_URL = "http://localhost:8080"
 
 def print_section(title):
     print("\n" + "="*70)
