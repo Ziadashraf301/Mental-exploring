@@ -1,353 +1,320 @@
 # Depression Detection
 
-The first model that we have developed is focused on depression detection using text data, and it represents a crucial area of research owing to the increasing prevalence of depression and other mental health disorders. By leveraging advanced natural language processing techniques, this model can analyze text data in order to identify patterns and indicators that are indicative of depression. This early detection is vital as it enables individuals to receive timely interventions and resources that can help them manage their condition and improve their overall quality of life. 
+Our depression detection model leverages advanced natural language processing to analyze text data and identify patterns indicative of depression. This early detection system enables individuals to receive timely interventions and resources, helping them manage their condition and improve their quality of life.
 
 https://github.com/Ziadashraf301/Mental-exploring/assets/111798631/7de96f15-a505-4841-878d-3214c45b5ed4
 
-## Model Evolution & Performance Comparison
+## Model Performance Comparison
 
-We have progressively improved our depression detection system through three generations of models:
+We progressively improved our system through multiple generations:
 
 ### 📊 Performance Summary
 
 | Model | Accuracy | Precision | Recall | F1-Score | AUC-ROC | Training Time |
 |-------|----------|-----------|--------|----------|---------|---------------|
-| **Multinomial Naive Bayes** | 85.95% | 86.00% | 86.00% | 86.00% | 93.30% | 18.96s |
-| **Stochastic Gradient Descent** | 87.38% | 87.00% | 87.00% | 87.00% | 94.41% | 33.40s |
-| **Ensemble (SGD + Naive Bayes)** | ~87.50% | ~87.00% | ~87.00% | ~87.00% | ~94.50% | Combined |
-| **🏆 RoBERTa + LoRA (Current)** | **91.03%** | **91.49%** | **89.93%** | **90.70%** | **96.85%** | ~2 hours* |
+| Multinomial Naive Bayes | 85.95% | 86.00% | 86.00% | 86.00% | 93.30% | ~19s |
+| Stochastic Gradient Descent | 87.38% | 87.00% | 87.00% | 87.00% | 94.41% | ~33s |
+| 🏆 RoBERTa + LoRA (Production) | **91.03%** | **91.49%** | **89.93%** | **90.70%** | **96.85%** | ~2 hours* |
 
-*\*Training time reflects GPU-accelerated training on Tesla T4 with parameter-efficient fine-tuning*
+*GPU-accelerated training on Tesla T4 with parameter-efficient fine-tuning
 
-### 🚀 Key Improvements
+### Model Selection
 
-Our latest **RoBERTa-base with LoRA** model demonstrates significant improvements over traditional ML approaches:
+We selected **RoBERTa + LoRA** as our production model due to:
 
-#### Accuracy Improvements
-- **+3.53%** absolute improvement over ensemble model (91.03% vs 87.50%)
-- **+5.08%** improvement over baseline Naive Bayes (91.03% vs 85.95%)
-- **+4.19%** relative error reduction compared to ensemble
+✅ **Superior Performance**: 91.03% accuracy (+3.65% over SGD)  
+✅ **Excellent AUC-ROC**: 96.85% for reliable discrimination  
+✅ **Contextual Understanding**: Captures semantic meaning and context  
+✅ **Transfer Learning**: Leverages pre-trained language knowledge  
+✅ **Parameter Efficiency**: LoRA fine-tunes only 0.94% of parameters
 
-#### AUC-ROC Improvements
-- **+2.35%** improvement over ensemble (96.85% vs 94.50%)
-- **+2.48%** improvement over SGD alone (96.85% vs 94.41%)
-- **Better discriminative power** between depression and non-depression cases
+### Key Improvements Over Traditional ML
 
-#### Precision & Recall Balance
-- **Higher precision** (91.49% vs 87.00%): Fewer false positives
-- **Better recall** (89.93% vs 87.00%): Better at identifying true depression cases
-- **More balanced predictions** across both classes
+**Accuracy**: +3.65% absolute improvement (91.03% vs 87.38%)  
+**AUC-ROC**: +2.44% improvement (96.85% vs 94.41%)  
+**False Positives**: 31.9% reduction (8.51% vs 12.50%)  
+**False Negatives**: 22.5% fewer missed cases (10.07% vs 13.00%)
 
-### 📈 Detailed Model Comparison
+## Pipeline Overview
 
-#### 1. Multinomial Naive Bayes (Baseline)
+**Complete Pipeline:**
+1. [Data loading](#dag-1-data-loading-pipeline)
+2. [Text preprocessing](#dag-2-text-preprocessing-pipeline)
+3. [Vectorization/Tokenization](#dag-3-vectorization-pipeline)
+4. [Model training](#dag-4-model-training-pipeline)
+
+## Dataset
+
+**Total Samples**: 329,593 text entries
+
+**Class Distribution:**
+- Not Depressed: 169,174 (51.3%)
+- Depressed: 160,419 (48.7%)
+
+**Data Split:**
+- Training: 70% (230,715)
+- Validation: 15% (49,439)
+- Test: 15% (49,439)
+
+## Automated Training Pipeline (Apache Airflow)
+
+Production-grade automated pipeline with 4 sequential DAGs running weekly on Sunday nights.
+
+### Pipeline Architecture
+
+```
+┌──────────────────────────────────────────────────────┐
+│            WEEKLY TRAINING PIPELINE                   │
+│             (Every Sunday Night)                      │
+└──────────────────────────────────────────────────────┘
+
+DAG 1: Data Loading         → 10:00 PM Sunday
+  ↓ (Trigger)
+DAG 2: Preprocessing        → 10:10 PM Sunday
+  ↓ (Trigger)
+DAG 3: Vectorization        → 10:40 PM Sunday
+  ↓ (Trigger)
+DAG 4: Model Training       → 11:00 PM Sunday
+```
+
+### Default Configuration
+
 ```python
-MultinomialNB(alpha=0.1, fit_prior=False)
-+ TF-IDF Vectorization (max_features=30,000)
+default_args = {
+    'owner': 'airflow',
+    'depends_on_past': False,
+    'email_on_failure': True,
+    'email_on_retry': False,
+    'retries': 2,
+    'retry_delay': timedelta(minutes=5)
+}
 ```
-
-**Strengths:**
-- ✅ Fast training (18.96s)
-- ✅ Simple and interpretable
-- ✅ Good baseline performance
-
-**Limitations:**
-- ❌ Assumes feature independence
-- ❌ Limited context understanding
-- ❌ Cannot capture complex patterns
-
-**Results:**
-- Accuracy: 85.95%
-- Sensitivity: 89.30%
-- Specificity: 82.76%
-- AUC-ROC: 93.30%
-- CV Score: 86.11%
 
 ---
 
-#### 2. Stochastic Gradient Descent
+## DAG 1: Data Loading Pipeline
+
+**Schedule**: `0 22 * * 0` (10:00 PM every Sunday)  
+**Purpose**: Load and split depression detection dataset
+
+### Key Tasks
+
 ```python
-SGDClassifier(
-    loss='modified_huber',
-    penalty='l2',
-    alpha=0.0001,
-    max_iter=60,
-    learning_rate='adaptive'
-)
-+ TF-IDF Vectorization (max_features=30,000)
-```
-
-**Strengths:**
-- ✅ Better than Naive Bayes
-- ✅ Handles large datasets well
-- ✅ More balanced sensitivity/specificity
-
-**Limitations:**
-- ❌ Still relies on bag-of-words
-- ❌ No semantic understanding
-- ❌ Sensitive to hyperparameters
-
-**Results:**
-- Accuracy: 87.38%
-- Sensitivity: 87.26%
-- Specificity: 87.49%
-- AUC-ROC: 94.41%
-- CV Score: 88.74%
-
----
-
-#### 3. Ensemble (SGD + Naive Bayes) - Deployed Model
-```python
-Voting/Stacking ensemble of SGD and Multinomial NB
-```
-
-**Strengths:**
-- ✅ Combines strengths of both models
-- ✅ Reduces individual model weaknesses
-- ✅ Best traditional ML performance
-
-**Limitations:**
-- ❌ Still limited by TF-IDF representation
-- ❌ No contextual understanding
-- ❌ Cannot capture word order/semantics
-
-**Estimated Results:**
-- Accuracy: ~87.50%
-- AUC-ROC: ~94.50%
-
----
-
-#### 4. 🏆 RoBERTa + LoRA (Current State-of-the-Art)
-```python
-RoBERTa-base with LoRA fine-tuning
-- Rank: 16
-- Alpha: 32
-- Target: Query & Value layers
-- Max Length: 128 tokens
-```
-
-**Revolutionary Advantages:**
-- ✅ **Contextual understanding**: Captures semantic meaning and context
-- ✅ **Word order sensitivity**: Understands sentence structure
-- ✅ **Transfer learning**: Leverages pre-trained language knowledge
-- ✅ **Parameter efficiency**: LoRA fine-tunes only 0.94% of parameters
-- ✅ **Better generalization**: Reduced overfitting with early stopping
-- ✅ **State-of-the-art architecture**: Transformer-based attention mechanism
-
-**Outstanding Results:**
-- **Accuracy: 91.03%** (+3.53% improvement)
-- **Precision: 91.49%** (+4.49% improvement)
-- **Recall: 89.93%** (+2.93% improvement)
-- **F1-Score: 90.70%** (+3.70% improvement)
-- **AUC-ROC: 96.85%** (+2.35% improvement)
-- **Specificity: 92.07%** (+4.58% improvement)
-- **Sensitivity: 89.93%** (+2.67% improvement)
-
----
-
-### 🎯 Why RoBERTa Outperforms Traditional ML
-
-#### 1. **Semantic Understanding**
-- Traditional ML: Treats text as "bag of words"
-- RoBERTa: Understands context, synonyms, and semantic relationships
-
-#### 2. **Contextual Awareness**
-```
-Input: "I feel hopeless and empty inside"
-
-Traditional ML:
-- Counts words: "hopeless"(1), "empty"(1), "inside"(1)
-- No context understanding
-
-RoBERTa:
-- Understands "hopeless" in context of emotional state
-- Recognizes "empty inside" as metaphor for depression
-- Captures sentiment and emotional nuance
-```
-
-#### 3. **Transfer Learning**
-- Pre-trained on massive text corpora
-- Already understands language patterns
-- Fine-tuning adapts this knowledge to depression detection
-
-#### 4. **Better Feature Representation**
-- Traditional ML: TF-IDF vectors (sparse, 30K dimensions)
-- RoBERTa: Dense embeddings (768 dimensions) with rich semantic information
-
----
-
-### 📊 Real-World Impact
-
-#### False Positive Reduction
-```
-Ensemble Model: ~12.50% false positives
-RoBERTa Model:  ~8.51% false positives
-→ 31.9% reduction in false alarms
-```
-
-#### False Negative Reduction
-```
-Ensemble Model: ~13.00% false negatives (missed cases)
-RoBERTa Model:  ~10.07% false negatives
-→ 22.5% fewer missed depression cases
-```
-
-#### Clinical Significance
-- **732 more accurate predictions** per 10,000 screened individuals
-- **293 fewer false negatives** = more people getting needed help
-- **439 fewer false positives** = reduced unnecessary clinical resources
-
----
-
-## Model Development Process
-
-Our model development includes several key steps:
-
-### Traditional ML Pipeline (Baseline & Ensemble Models)
-- [Data collection](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Data_assets/Data%20References.md)
-- [Data preprocessing](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Depression_detection/notebooks/Preprocessing.ipynb)
-- [Feature engineering](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Depression_detection/notebooks//Models.ipynb)
-- [Machine learning modeling](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Depression_detection/notebooks//Models.ipynb)
-- [Model evaluation](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Depression_detection/notebooks//Models.ipynb)
-- [Statistical testing of models](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Depression_detection/notebooks/Test_Models_Statistically.ipynb)
-- [Model integration](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Depression_detection/pipeline/model_prediction_pipline.py)
-
-### Deep Learning with RoBERTa
-- [Fine-tuned RoBERTa with LoRA](https://github.com/Ziadashraf301/Mental-exploring/blob/main/Depression_detection/notebooks/Depression_Detection_With_Bert.ipynb)
-
----
-
-## [Dataset](https://drive.google.com/file/d/1WATc0Uor8yUII4PX-HUZNab9fQcAxO9A/view?usp=sharing)
-
-The model was trained on a large-scale, balanced dataset:
-- **Total Samples:** 329,593 text entries
-- **Class Distribution:**
-  - Not Depressed: 169,174 (51.3%)
-  - Depressed: 160,419 (48.7%)
-- **Data Split:**
-  - Training: 70% (230,715 samples)
-  - Validation: 15% (49,439 samples)
-  - Test: 15% (49,439 samples)
-
----
-
-## Usage
-
-### Loading the RoBERTa Model
-```python
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
-import torch
-
-# Load model and tokenizer
-model_path = 'ziadashraf98765/roberta-depression-detection-lora-merged'
-tokenizer = AutoTokenizer.from_pretrained(model_path)
-model = AutoModelForSequenceClassification.from_pretrained(model_path)
-
-# Set device
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model.to(device)
-```
-
-### Making Predictions
-```python
-def predict_depression(text, model, tokenizer, device='cpu', max_length=128):
-    """
-    Predict depression from text input
-    
-    Args:
-        text: Input text string
-        model: Fine-tuned RoBERTa model
-        tokenizer: RoBERTa tokenizer
-        device: 'cuda' or 'cpu'
-        max_length: Maximum sequence length
-    
-    Returns:
-        dict: {
-            'prediction': 'Depressed' or 'Not Depressed',
-            'confidence': float (0-1),
-            'depression_probability': float (0-1),
-            'not_depression_probability': float (0-1)
-        }
-    """
-    model.eval()
-    
-    # Tokenize input
-    encoding = tokenizer(
-        text,
-        add_special_tokens=True,
-        max_length=max_length,
-        padding='max_length',
-        truncation=True,
-        return_attention_mask=True,
-        return_tensors='pt'
+def load_data_task():
+    # Load data
+    train_data, test_data = load_data(
+        raw_data_path=CONFIG.raw_data_path,
+        target_column_names=CONFIG.target_columns,
+        text_column_names=CONFIG.text_columns,
+        test_size=0.3,
+        random_state=42
     )
     
-    # Move to device
-    input_ids = encoding['input_ids'].to(device)
-    attention_mask = encoding['attention_mask'].to(device)
-    
-    # Get predictions
-    with torch.no_grad():
-        outputs = model(input_ids=input_ids, attention_mask=attention_mask)
-        logits = outputs.logits
-        probs = torch.softmax(logits, dim=1)
-        pred_class = torch.argmax(probs, dim=1).item()
-        confidence = probs[0][pred_class].item()
-    
-    return {
-        'prediction': 'Depressed' if pred_class == 1 else 'Not Depressed',
-        'confidence': confidence,
-        'depression_probability': probs[0][1].item(),
-        'not_depression_probability': probs[0][0].item()
-    }
-
-# Example usage
-text = "I feel so hopeless and empty inside"
-result = predict_depression(text, model, tokenizer, device)
-
-print(f"Prediction: {result['prediction']}")
-print(f"Confidence: {result['confidence']:.2%}")
-print(f"Depression Probability: {result['depression_probability']:.2%}")
+    # Save for next DAG
+    save_to_pickle(train_data, test_data)
 ```
 
-**Example Output:**
-```
-Prediction: Depressed
-Confidence: 94.59%
-Depression Probability: 94.59%
-```
+**Output:**
+- `train_tweets.pkl` → Training data (70%)
+- `test_tweets.pkl` → Test data (30%)
 
 ---
 
-## Requirements
-```txt
-# Deep Learning (RoBERTa Model)
-transformers>=4.30.0
-torch>=2.0.0
-peft>=0.4.0
-datasets>=2.12.0
-accelerate>=0.20.0
+## DAG 2: Text Preprocessing Pipeline
 
-# Traditional ML Models
-scikit-learn>=1.2.0
-nltk>=3.8.0
+**Schedule**: `10 22 * * 0` (10:10 PM every Sunday)  
+**Purpose**: Clean and preprocess text data
 
-# Data Processing & Visualization
-pandas>=1.5.0
-numpy>=1.24.0
-matplotlib>=3.7.0
-seaborn>=0.12.0
+### Key Tasks
 
-# Optional: Deployment
-fastapi>=0.100.0
-uvicorn>=0.23.0
+```python
+def preprocess_data_task():
+    # Set random seeds
+    set_random_seeds(CONFIG)
+    
+    # Load raw data
+    train_tweets = load_pickle("train_tweets.pkl")
+    test_tweets = load_pickle("test_tweets.pkl")
+    
+    # Clean tweets
+    processed_train = []
+    for tweet in train_tweets["filtered_tweet"]:
+        processed = clean_tweets(tweet)
+        processed_train.append(processed)
+    
+    # Save preprocessed data
+    save_preprocessed(X_train, y_train, X_test, y_test)
 ```
+
+**Preprocessing Steps:**
+- Lowercase conversion
+- URL/mention removal
+- Special character handling
+- Stopword removal
+- Text normalization
+
+**Output:**
+- `X_train.pkl` → Clean texts (training)
+- `y_train.pkl` → Labels (training)
+- `X_test.pkl` → Clean texts (test)
+- `y_test.pkl` → Labels (test)
 
 ---
 
-## Model Architecture
+## DAG 3: Vectorization Pipeline
 
-### RoBERTa + LoRA Architecture
+**Schedule**: `40 22 * * 0` (10:40 PM every Sunday)  
+**Purpose**: Transform text for Classical ML (TF-IDF) and BERT (tokenization)
+
+### Parallel Processing
+
+This DAG runs two tasks in parallel:
+
+#### Task 3A: Classical ML Vectorization
+
+```python
+def vectorize_classical_ml_task():
+    # Skip if classical ML disabled
+    if not CONFIG.get_pipeline("classical_ml")["enabled"]:
+        return
+    
+    mlflow.set_experiment(CONFIG.mlflow_experiment_name)
+    
+    with mlflow.start_run(run_name="tfidf_vectorization"):
+        # Build TF-IDF vectorizer
+        vectorizer = build_tfidf_vectorizer()
+        
+        # Transform data
+        X_train_vec = vectorizer.fit_transform(X_train)
+        X_test_vec = vectorizer.transform(X_test)
+        
+        # Log to MLflow
+        mlflow.log_params({
+            "tfidf_max_features": 30000,
+            "vocabulary_size": len(vectorizer.vocabulary_)
+        })
+        
+        # Save and register
+        save_vectorizer(vectorizer)
+        mlflow.sklearn.log_model(vectorizer, "TFIDF_Vectorizer_Depression")
+```
+
+**Output:**
+- `X_train_vec.pkl` → TF-IDF matrix (training)
+- `X_test_vec.pkl` → TF-IDF matrix (test)
+- `tfidf_vectorizer.pkl` → Trained vectorizer
+- Registered in MLflow Registry
+
+#### Task 3B: BERT Tokenization
+
+```python
+def prepare_bert_datasets_task():
+    # Skip if BERT disabled
+    if not CONFIG.get_pipeline("bert")["enabled"]:
+        return
+    
+    mlflow.set_experiment(CONFIG.mlflow_experiment_name)
+    
+    with mlflow.start_run(run_name="bert_tokenization"):
+        # Load tokenizer
+        tokenizer = build_bert_tokenizer()
+        
+        # Split test into val/test
+        X_val, X_test_final, y_val, y_test_final = train_test_split(
+            X_test, y_test, test_size=0.5, random_state=42
+        )
+        
+        # Create datasets
+        train_dataset, val_dataset, test_dataset = create_bert_datasets(
+            X_train, y_train,
+            X_val, y_val,
+            X_test_final, y_test_final,
+            tokenizer
+        )
+        
+        # Log to MLflow
+        mlflow.log_params({
+            "bert_model_name": "roberta-base",
+            "bert_max_length": 128
+        })
+        
+        # Save datasets and tokenizer
+        save_bert_datasets(train_dataset, val_dataset, test_dataset)
+        tokenizer.save_pretrained("bert_tokenizer")
+```
+
+**Output:**
+- `bert_train_dataset.pkl` → Training dataset
+- `bert_val_dataset.pkl` → Validation dataset
+- `bert_test_dataset.pkl` → Test dataset
+- `bert_tokenizer/` → Saved tokenizer
+
+---
+
+## DAG 4: Model Training Pipeline
+
+**Schedule**: `0 23 * * 0` (11:00 PM every Sunday)  
+**Purpose**: Train Classical ML models
+
+### Training Process
+
+```python
+def train_data_task():
+    mlflow.set_experiment(CONFIG.mlflow_experiment_name)
+    
+    # Load vectorized data
+    X_train = load_pickle("X_train_vec.pkl")
+    X_test = load_pickle("X_test_vec.pkl")
+    
+    # Train Multinomial Naive Bayes
+    if CONFIG.mnb_enabled:
+        with mlflow.start_run(run_name="multinomial_nb"):
+            mnb_model = train_multinomial_nb(X_train, y_train)
+            
+            # Cross-validation
+            if CONFIG.cv_enabled:
+                cv_scores = run_cv_sklearn(mnb_model, X_train, y_train)
+                mlflow.log_metric("cv_mean_accuracy", np.mean(cv_scores))
+            
+            # Evaluate
+            results = get_report(mnb_model, X_train, y_train, X_test, y_test)
+            
+            mlflow.log_metrics({
+                "train_accuracy": results["train"]["accuracy"],
+                "test_accuracy": results["test"]["accuracy"],
+                "test_f1": results["test"]["f1"],
+                "test_auc": results["test"]["roc_auc"]
+            })
+            
+            # Register model
+            mlflow.sklearn.log_model(mnb_model, "Depression_Detection_MNB")
+    
+    # Train SGD Classifier
+    if CONFIG.sgd_enabled:
+        with mlflow.start_run(run_name="sgd_classifier"):
+            sgd_model = train_sgd_classifier(X_train, y_train)
+            # Similar logging process...
+```
+
+**Logged Metrics (Classical ML):**
+
+| Model | Train Acc | Test Acc | F1 | Precision | Recall | AUC-ROC |
+|-------|-----------|----------|-----|-----------|--------|---------|
+| **MNB** | 85.95% | 85.95% | 86.00% | 86.00% | 86.00% | 93.30% |
+| **SGD** | 87.38% | 87.38% | 87.00% | 87.00% | 87.00% | 94.41% |
+
+**Artifacts:**
+- Confusion matrices
+- ROC curves
+- Metric plots
+- Trained models registered in MLflow
+
+---
+
+## RoBERTa + LoRA Model (Production)
+
+### Model Architecture
+
 ```
 Input Text (max 128 tokens)
          ↓
@@ -356,131 +323,211 @@ Input Text (max 128 tokens)
 ┌─────────────────────────┐
 │   RoBERTa-base Encoder  │
 │   (12 Transformer Layers)│
-│                         │
 │   + LoRA Adapters       │
-│     (Query & Value)     │
-│     Rank: 16            │
-│     Alpha: 32           │
+│     Rank: 16, Alpha: 32 │
 └─────────────────────────┘
          ↓
-   Pooled Output (768-dim)
-         ↓
-  Classification Head
-         ↓
-   Softmax (2 classes)
+   Classification Head
          ↓
 Output: [P(Not Depressed), P(Depressed)]
 ```
 
-**Technical Specifications:**
-- **Total Parameters:** 125,829,124
-- **Trainable Parameters (LoRA):** 1,181,954 (0.94%)
-- **Frozen Parameters:** 124,647,170 (99.06%)
-- **Hidden Size:** 768
-- **Attention Heads:** 12
-- **Layers:** 12
-- **Max Position Embeddings:** 514
+**Specifications:**
+- Total Parameters: 125,829,124
+- Trainable (LoRA): 1,181,954 (0.94%)
+- Hidden Size: 768
+- Attention Heads: 12
+- Max Length: 128 tokens
 
----
+### Training Configuration
 
-## Training Configuration
-
-### Hyperparameters
 ```python
 TrainingArguments(
     num_train_epochs=10,
     per_device_train_batch_size=128,
-    per_device_eval_batch_size=128,
-    warmup_steps=500,
-    weight_decay=0.01,
-    learning_rate=auto,  # Adaptive
-    fp16=True,  # Mixed precision training
+    learning_rate=auto,
+    fp16=True,
     eval_strategy='steps',
-    eval_steps=500,
-    save_steps=500,
-    load_best_model_at_end=True,
-    metric_for_best_model='f1'
+    load_best_model_at_end=True
 )
-```
 
-### LoRA Configuration
-```python
 LoraConfig(
-    r=16,                    # Rank of update matrices
-    lora_alpha=32,           # Scaling factor
+    r=16,
+    lora_alpha=32,
     target_modules=["query", "value"],
-    lora_dropout=0.1,
-    bias="none",
-    task_type="SEQ_CLS"
+    lora_dropout=0.1
 )
 ```
 
-### Training Results
-- **Training Time:** ~2 hours (Tesla T4 GPU)
-- **Best Epoch:** 5 (with early stopping)
-- **Training Loss:** 0.2253
-- **Validation Loss:** 0.2194
-- **No overfitting observed**
+**Results:**
+- Training Time: ~2 hours (Tesla T4)
+- Best Epoch: 5 (early stopping)
+- Validation Loss: 0.2194
+- No overfitting observed
+
+---
+
+## Complete Pipeline Flow
+
+```
+┌──────────────────────────────────────────────────────┐
+│        DEPRESSION DETECTION PIPELINE FLOW             │
+└──────────────────────────────────────────────────────┘
+
+[10:00 PM] DAG 1: DATA LOADING
+├── Load depression dataset (329K texts)
+├── Split 70/30 (train/test)
+├── Save: train_tweets.pkl, test_tweets.pkl
+└── Trigger → DAG 2
+
+[10:10 PM] DAG 2: PREPROCESSING
+├── Load raw data from DAG 1
+├── Clean tweets (lowercase, remove URLs, etc.)
+├── Save: X_train.pkl, y_train.pkl, X_test.pkl, y_test.pkl
+└── Trigger → DAG 3
+
+[10:40 PM] DAG 3: VECTORIZATION (parallel)
+├── Task 3A: Classical ML
+│   ├── Build TF-IDF vectorizer (30K features)
+│   ├── Transform train & test
+│   ├── Save: X_train_vec.pkl, X_test_vec.pkl
+│   └── Register vectorizer in MLflow
+│
+├── Task 3B: BERT Tokenization
+│   ├── Load RoBERTa tokenizer
+│   ├── Split test → val/test
+│   ├── Create tokenized datasets
+│   └── Save: bert_train/val/test_dataset.pkl
+│
+└── Trigger → DAG 4
+
+[11:00 PM] DAG 4: MODEL TRAINING
+├── Train Classical ML models:
+│   ├── Multinomial NB (85.95% acc)
+│   └── SGD Classifier (87.38% acc)
+├── For each model:
+│   ├── Cross-validation (optional)
+│   ├── Evaluate on train & test
+│   ├── Generate confusion matrix & ROC curve
+│   ├── Log metrics to MLflow
+│   └── Register in MLflow Registry
+└── End
+
+[Separate] RoBERTa Training (Jupyter/Colab)
+├── Load BERT datasets
+├── Fine-tune RoBERTa + LoRA
+├── Achieve 91.03% accuracy ⭐
+└── Deploy to production
+```
+
+---
+
+## Usage
+
+### RoBERTa Model Inference
+
+```python
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+import torch
+
+# Load model
+model_path = 'ziadashraf98765/roberta-depression-detection-lora-merged'
+tokenizer = AutoTokenizer.from_pretrained(model_path)
+model = AutoModelForSequenceClassification.from_pretrained(model_path)
+
+# Predict
+def predict_depression(text):
+    encoding = tokenizer(text, max_length=128, truncation=True, 
+                        padding='max_length', return_tensors='pt')
+    
+    with torch.no_grad():
+        outputs = model(**encoding)
+        probs = torch.softmax(outputs.logits, dim=1)
+        pred = torch.argmax(probs, dim=1).item()
+    
+    return {
+        'prediction': 'Depressed' if pred == 1 else 'Not Depressed',
+        'confidence': probs[0][pred].item()
+    }
+
+# Example
+result = predict_depression("I feel hopeless and empty inside")
+print(f"{result['prediction']} (Confidence: {result['confidence']:.2%})")
+```
+
+---
+
+## MLflow Integration
+
+Full experiment tracking for all pipeline stages:
+
+**Tracked Information:**
+- ✅ Parameters: Hyperparameters, vectorizer settings
+- ✅ Metrics: Accuracy, precision, recall, F1, AUC-ROC
+- ✅ Artifacts: Models, vectorizers, tokenizers, plots
+- ✅ System Metrics: CPU, memory, GPU usage
+- ✅ Model Registry: Versioned models with metadata
+
+---
+
+## Source Code Structure
+
+```
+Depression_detection/
+├── src/
+│   ├── config/
+│   │   ├── train_config_loader.py
+│   │   └── train_config_random_seed.py
+│   ├── logger/
+│   │   └── train_logger.py
+│   ├── text/
+│   │   ├── data_loader.py
+│   │   └── data_preprocessor.py
+│   ├── models/
+│   │   ├── model_vectorizer.py
+│   │   ├── model_trainer.py
+│   │   └── model_evaluator.py
+│   └── utils/
+├── notebooks/
+│   ├── Models_Dev.ipynb
+│   └── Depression_Detection_With_Bert.ipynb
+├── data/
+│   ├── raw/
+│   └── processed/
+├── models/
+├── plots/
+├── logs/
+└── train_config.yaml
+```
 
 ---
 
 ## Clinical Applications
 
 ### Use Cases
-1. **Screening Tool:** Early identification of at-risk individuals
-2. **Social Media Monitoring:** Track mental health trends in online communities
-3. **Crisis Intervention:** Flag concerning posts for immediate support
-4. **Treatment Progress:** Monitor patient communication over time
-5. **Research:** Large-scale epidemiological studies
+- Early screening for at-risk individuals
+- Social media mental health monitoring
+- Crisis intervention flagging
+- Treatment progress tracking
+- Research & epidemiology
 
-### Clinical Validation Metrics
-- **Sensitivity (Recall):** 89.93% - Correctly identifies 9/10 depression cases
-- **Specificity:** 92.07% - Correctly identifies 92/100 non-depression cases
-- **Positive Predictive Value (Precision):** 91.49% - 91% of "depressed" predictions are correct
-- **Negative Predictive Value:** 90.51% - 91% of "not depressed" predictions are correct
+### Clinical Metrics (RoBERTa)
+- **Sensitivity**: 89.93% - Identifies 9/10 depression cases
+- **Specificity**: 92.07% - Correctly identifies 92/100 non-depression cases
+- **PPV (Precision)**: 91.49% - 91% of positive predictions are correct
+- **NPV**: 90.51% - 91% of negative predictions are correct
 
-### ⚠️ Important Clinical Note
+### ⚠️ Important Note
 
-**This model is a screening tool, NOT a diagnostic instrument:**
-- ✅ Use as a first-line screening aid
-- ✅ Flag high-risk individuals for clinical evaluation
+**This is a screening tool, NOT a diagnostic instrument:**
+- ✅ Use as first-line screening aid
+- ✅ Flag high-risk individuals for evaluation
 - ✅ Support clinical decision-making
-- ❌ Do NOT use as sole basis for diagnosis
-- ❌ Do NOT replace professional clinical assessment
-- ❌ Always involve qualified mental health professionals
+- ❌ Do NOT use as sole diagnosis basis
+- ❌ Always involve qualified professionals
 
 ---
 
-## Deployment Considerations
-
-### Model Size & Performance
-- **Model Size:** ~500 MB (merged model)
-- **Inference Time:** ~50ms per text (GPU) / ~200ms (CPU)
-- **Throughput:** ~20 texts/second (GPU)
-- **Memory Requirements:** ~2GB GPU / ~4GB RAM
-
-### Deployment
-```python
-# For production API
-from fastapi import FastAPI
-from pydantic import BaseModel
-
-app = FastAPI()
-
-class TextInput(BaseModel):
-    text: str
-
-@app.post("/predict")
-async def predict(input: TextInput):
-    result = predict_depression(
-        input.text,
-        model,
-        tokenizer,
-        device='cuda'
-    )
-    return result
-```
-
-**Last Updated:** 2025
-**Model Version:** 2.0 (RoBERTa + LoRA)
-**Previous Version:** 1.0 (Ensemble: SGD + Naive Bayes)
+**Model Version**: 2.0 (RoBERTa + LoRA)  
+**Previous Version**: 1.0 (Ensemble: SGD + Naive Bayes)  
+**Last Updated**: 2025
