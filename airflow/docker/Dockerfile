@@ -28,5 +28,5 @@ COPY airflow/docker/requirements.txt /tmp/requirements.txt
 # Install the requirements
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
-# Download NLTK data (if needed)
+# Download NLTK data
 RUN python -c "import nltk; nltk.download('punkt'); nltk.download('stopwords'); nltk.download('wordnet')"
