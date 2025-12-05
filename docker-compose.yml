@@ -85,6 +85,7 @@ services:
     command: webserver
     volumes:
       - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/data:/opt/airflow/data
       - ./Emotion_detection:/opt/airflow/Emotion_detection
       - ./Sentiment_analysis:/opt/airflow/Sentiment_analysis
       - ./Depression_detection:/opt/airflow/Depression_detection
@@ -125,6 +126,7 @@ services:
     command: scheduler
     volumes:
       - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/data:/opt/airflow/data
       - ./Emotion_detection:/opt/airflow/Emotion_detection
       - ./Sentiment_analysis:/opt/airflow/Sentiment_analysis
       - ./Depression_detection:/opt/airflow/Depression_detection
