@@ -1,7 +1,8 @@
 from sklearn.metrics import (
     accuracy_score, f1_score, precision_score, recall_score,
-    log_loss, roc_auc_score
+    log_loss, roc_auc_score, precision_recall_fscore_support
 )
+import torch
 
 def get_predictions(model, x):
     """Return predictions and predicted probabilities."""
@@ -30,4 +31,27 @@ def compute_metrics(y_true, y_pred, y_prob):
         "recall": recall_score(y_true, y_pred),
         "logloss": log_loss(y_true, y_prob),
         "roc_auc": roc_auc_score(y_true, y_prob),
+    }
+
+
+def compute_metrics_torch(pred):
+    labels = pred.label_ids
+    preds = pred.predictions.argmax(-1)
+
+    # Calculate metrics
+    precision, recall, f1, _ = precision_recall_fscore_support(
+        labels, preds, average='binary'
+    )
+    acc = accuracy_score(labels, preds)
+
+    # AUC-ROC (using probabilities)
+    probs = torch.softmax(torch.tensor(pred.predictions), dim=1)[:, 1].numpy()
+    auc = roc_auc_score(labels, probs)
+
+    return {
+        'accuracy': acc,
+        'f1': f1,
+        'precision': precision,
+        'recall': recall,
+        'auc_roc': auc
     }
